@@ -42,6 +42,14 @@ func (g *gui) makeGUI() fyne.CanvasObject {
 	return container.New(newFysionLayout(top, left, right, content, dividers), objs...)
 }
 
+func (g *gui) makeMenu() *fyne.MainMenu {
+	file := fyne.NewMenu("File",
+		fyne.NewMenuItem("Open Project", g.openProjectDialog),
+	)
+
+	return fyne.NewMainMenu(file)
+}
+
 func (g *gui) openProjectDialog() {
 	dialog.ShowFolderOpen(func(dir fyne.ListableURI, err error) {
 		if err != nil {

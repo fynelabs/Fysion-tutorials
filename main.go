@@ -52,11 +52,3 @@ func main() {
 
 	w.ShowAndRun()
 }
-
-func (g *gui) makeMenu() *fyne.MainMenu {
-	file := fyne.NewMenu("File",
-		fyne.NewMenuItem("Open Project", g.openProjectDialog),
-	)
-
-	return fyne.NewMainMenu(file)
-}
