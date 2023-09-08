@@ -9,6 +9,7 @@ func main() {
 	a := app.New()
 	a.Settings().SetTheme(newFysionTheme())
 	w := a.NewWindow("Fysion App")
+	w.SetPadded(false)
 	w.Resize(fyne.NewSize(1024, 768))
 
 	w.SetContent(makeGUI())
