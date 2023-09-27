@@ -20,6 +20,8 @@ import (
 type gui struct {
 	win   fyne.Window
 	title binding.String
+
+	fileTree binding.URITree
 }
 
 func (g *gui) makeBanner() fyne.CanvasObject {
@@ -47,11 +49,37 @@ func (g *gui) makeBanner() fyne.CanvasObject {
 
 func (g *gui) makeGUI() fyne.CanvasObject {
 	top := g.makeBanner()
-	left := widget.NewLabel("Left")
-	right := widget.NewLabel("Right")
+	g.fileTree = binding.NewURITree()
+	files := widget.NewTreeWithData(g.fileTree, func(branch bool) fyne.CanvasObject {
+		return widget.NewLabel("filename.jpg")
+	}, func(data binding.DataItem, branch bool, obj fyne.CanvasObject) {
+		l := obj.(*widget.Label)
+		u, _ := data.(binding.URI).Get()
 
-	directory := widget.NewLabelWithData(g.title)
-	content := container.NewStack(canvas.NewRectangle(color.Gray{Y: 0xee}), directory)
+		name := u.Name()
+		l.SetText(name)
+	})
+	left := widget.NewAccordion(
+		widget.NewAccordionItem("Files", files),
+		widget.NewAccordionItem("Screens", widget.NewLabel("TODO screens")),
+	)
+	left.Open(0)
+	left.MultiOpen = true
+
+	right := widget.NewRichTextFromMarkdown("## Settings")
+
+	name, _ := g.title.Get()
+	window := container.NewInnerWindow(name,
+		widget.NewLabel("App Preview Here"),
+	)
+	window.CloseIntercept = func() {}
+
+	picker := widget.NewSelect([]string{"Desktop", "iPhone 15 Max"}, func(string) {})
+	picker.Selected = "Desktop"
+
+	preview := container.NewBorder(container.NewHBox(picker), nil, nil, nil, container.NewCenter(window))
+	content := container.NewStack(canvas.NewRectangle(color.Gray{Y: 0xee}),
+		container.NewPadded(preview))
 
 	dividers := [3]fyne.CanvasObject{
 		widget.NewSeparator(), widget.NewSeparator(), widget.NewSeparator(),
@@ -80,12 +108,6 @@ func (g *gui) openProjectDialog() {
 
 		g.openProject(dir)
 	}, g.win)
-}
-
-func (g *gui) openProject(dir fyne.ListableURI) {
-	name := dir.Name()
-
-	g.title.Set(name)
 }
 
 func (g *gui) showCreate(w fyne.Window) {
