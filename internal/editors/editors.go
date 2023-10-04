@@ -1,6 +1,7 @@
 package editors
 
 import (
+	"errors"
 	"io"
 	"strings"
 
@@ -10,24 +11,24 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
-var extentions = map[string]func(fyne.URI) fyne.CanvasObject{
+var extentions = map[string]func(fyne.URI) (fyne.CanvasObject, error){
 	".go":  makeGo,
 	".md":  makeTxt,
 	".png": makeImg,
 	".txt": makeTxt,
 }
 
-var mimes = map[string]func(fyne.URI) fyne.CanvasObject{
+var mimes = map[string]func(fyne.URI) (fyne.CanvasObject, error){
 	"text/plain": makeTxt,
 }
 
-func ForURI(u fyne.URI) fyne.CanvasObject {
+func ForURI(u fyne.URI) (fyne.CanvasObject, error) {
 	ext := strings.ToLower(u.Extension())
 	edit, ok := extentions[ext]
 	if !ok {
 		edit, ok = mimes[u.MimeType()]
 		if !ok {
-			return widget.NewLabel("Unable to find editor for file: " + u.Name() + ", mime: " + u.MimeType())
+			return nil, errors.New("unable to find editor for file: " + u.Name() + ", mime: " + u.MimeType())
 		}
 
 		return edit(u)
@@ -36,31 +37,32 @@ func ForURI(u fyne.URI) fyne.CanvasObject {
 	return edit(u)
 }
 
-func makeGo(u fyne.URI) fyne.CanvasObject {
+func makeGo(u fyne.URI) (fyne.CanvasObject, error) {
 	// TODO code editor
-	code := makeTxt(u)
-	code.(*widget.Entry).TextStyle = fyne.TextStyle{Monospace: true}
+	code, err := makeTxt(u)
+	if code != nil {
+		code.(*widget.Entry).TextStyle = fyne.TextStyle{Monospace: true}
+	}
 
-	return code
+	return code, err
 }
 
-func makeImg(u fyne.URI) fyne.CanvasObject {
+func makeImg(u fyne.URI) (fyne.CanvasObject, error) {
 	img := canvas.NewImageFromURI(u)
 	img.FillMode = canvas.ImageFillContain
-	return img
+	return img, nil
 }
 
-func makeTxt(u fyne.URI) fyne.CanvasObject {
+func makeTxt(u fyne.URI) (fyne.CanvasObject, error) {
 	code := widget.NewEntry()
 
 	r, err := storage.Reader(u)
 	if err != nil {
-		code.SetText("Unable to read " + u.Name())
-		return code
+		return nil, err
 	}
 
 	defer r.Close()
-	data, _ := io.ReadAll(r)
+	data, err := io.ReadAll(r)
 	code.SetText(string(data))
-	return code
+	return code, err
 }

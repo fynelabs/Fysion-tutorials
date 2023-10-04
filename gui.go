@@ -138,7 +138,11 @@ func (g *gui) openFile(u fyne.URI) {
 		return
 	}
 
-	edit := editors.ForURI(u)
+	edit, err := editors.ForURI(u)
+	if err != nil {
+		dialog.ShowError(err, g.win)
+		return
+	}
 
 	item := container.NewTabItem(u.Name(), edit)
 	if g.openTabs == nil {
