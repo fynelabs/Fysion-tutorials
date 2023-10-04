@@ -15,6 +15,8 @@ To check out the code from an old episode just `git checkout <tag>` where the ta
 * **ep1**: Setup, layout and theme
 * **ep2**: Packaging and Folder Open
 * **ep3**: Project Creation Wizard
+* **ep4**: File Tree and Editor Layout
+* **ep5**: Opening Multiple Files
 
 ## License
 
