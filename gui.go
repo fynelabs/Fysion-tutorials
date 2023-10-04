@@ -66,10 +66,21 @@ func (g *gui) makeGUI() fyne.CanvasObject {
 		u, err := g.fileTree.GetValue(id)
 		if err != nil {
 			dialog.ShowError(err, g.win)
+			files.Unselect(id)
 			return
 		}
 
-		g.openFile(u)
+		listable, err := storage.CanList(u)
+		if listable || err != nil {
+			files.Unselect(id)
+			return
+		}
+
+		err = g.openFile(u)
+		if err != nil {
+			dialog.ShowError(err, g.win)
+			files.Unselect(id)
+		}
 	}
 
 	left := widget.NewAccordion(
@@ -110,6 +121,18 @@ func (g *gui) makeGUI() fyne.CanvasObject {
 		}
 		g.content.Remove(item)
 	}
+	g.content.OnSelected = func(item *container.TabItem) {
+		var u fyne.URI
+		for child, childItem := range g.openTabs {
+			if childItem == item {
+				u = child
+			}
+		}
+
+		if u != nil {
+			files.Select(u.String())
+		}
+	}
 
 	dividers := [3]fyne.CanvasObject{
 		widget.NewSeparator(), widget.NewSeparator(), widget.NewSeparator(),
@@ -126,22 +149,15 @@ func (g *gui) makeMenu() *fyne.MainMenu {
 	return fyne.NewMainMenu(file)
 }
 
-func (g *gui) openFile(u fyne.URI) {
-	listable, err := storage.CanList(u)
-	if listable || err != nil {
-		// TODO should we unselect this item
-		return
-	}
-
+func (g *gui) openFile(u fyne.URI) error {
 	if item, ok := g.openTabs[u]; ok {
 		g.content.Select(item)
-		return
+		return nil
 	}
 
 	edit, err := editors.ForURI(u)
 	if err != nil {
-		dialog.ShowError(err, g.win)
-		return
+		return err
 	}
 
 	item := container.NewTabItem(u.Name(), edit)
@@ -152,6 +168,7 @@ func (g *gui) openFile(u fyne.URI) {
 
 	g.content.Append(item)
 	g.content.Select(item)
+	return nil
 }
 
 func (g *gui) openProjectDialog() {
