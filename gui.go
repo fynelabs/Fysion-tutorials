@@ -15,6 +15,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	"fysion.app/internal/dialogs"
+	"fysion.app/internal/editors"
 )
 
 type gui struct {
@@ -22,6 +23,8 @@ type gui struct {
 	title binding.String
 
 	fileTree binding.URITree
+	content  *container.DocTabs
+	openTabs map[fyne.URI]*container.TabItem
 }
 
 func (g *gui) makeBanner() fyne.CanvasObject {
@@ -59,6 +62,16 @@ func (g *gui) makeGUI() fyne.CanvasObject {
 		name := u.Name()
 		l.SetText(name)
 	})
+	files.OnSelected = func(id widget.TreeNodeID) {
+		u, err := g.fileTree.GetValue(id)
+		if err != nil {
+			dialog.ShowError(err, g.win)
+			return
+		}
+
+		g.openFile(u)
+	}
+
 	left := widget.NewAccordion(
 		widget.NewAccordionItem("Files", files),
 		widget.NewAccordionItem("Screens", widget.NewLabel("TODO screens")),
@@ -81,11 +94,28 @@ func (g *gui) makeGUI() fyne.CanvasObject {
 	content := container.NewStack(canvas.NewRectangle(color.Gray{Y: 0xee}),
 		container.NewPadded(preview))
 
+	g.content = container.NewDocTabs(
+		container.NewTabItem("Preview", content),
+	)
+	g.content.CloseIntercept = func(item *container.TabItem) {
+		var u fyne.URI
+		for child, childItem := range g.openTabs {
+			if childItem == item {
+				u = child
+			}
+		}
+
+		if u != nil {
+			delete(g.openTabs, u)
+		}
+		g.content.Remove(item)
+	}
+
 	dividers := [3]fyne.CanvasObject{
 		widget.NewSeparator(), widget.NewSeparator(), widget.NewSeparator(),
 	}
-	objs := []fyne.CanvasObject{content, top, left, right, dividers[0], dividers[1], dividers[2]}
-	return container.New(newFysionLayout(top, left, right, content, dividers), objs...)
+	objs := []fyne.CanvasObject{g.content, top, left, right, dividers[0], dividers[1], dividers[2]}
+	return container.New(newFysionLayout(top, left, right, g.content, dividers), objs...)
 }
 
 func (g *gui) makeMenu() *fyne.MainMenu {
@@ -94,6 +124,30 @@ func (g *gui) makeMenu() *fyne.MainMenu {
 	)
 
 	return fyne.NewMainMenu(file)
+}
+
+func (g *gui) openFile(u fyne.URI) {
+	listable, err := storage.CanList(u)
+	if listable || err != nil {
+		// TODO should we unselect this item
+		return
+	}
+
+	if item, ok := g.openTabs[u]; ok {
+		g.content.Select(item)
+		return
+	}
+
+	edit := editors.ForURI(u)
+
+	item := container.NewTabItem(u.Name(), edit)
+	if g.openTabs == nil {
+		g.openTabs = make(map[fyne.URI]*container.TabItem)
+	}
+	g.openTabs[u] = item
+
+	g.content.Append(item)
+	g.content.Select(item)
 }
 
 func (g *gui) openProjectDialog() {
