@@ -2,8 +2,8 @@ package main
 
 import (
 	"errors"
-	"image/color"
 	"os"
+	"path/filepath"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -92,21 +92,13 @@ func (g *gui) makeGUI() fyne.CanvasObject {
 
 	right := widget.NewRichTextFromMarkdown("## Settings")
 
-	name, _ := g.title.Get()
-	window := container.NewInnerWindow(name,
-		widget.NewLabel("App Preview Here"),
-	)
-	window.CloseIntercept = func() {}
+	home := widget.NewRichTextFromMarkdown(`
+# Welcome to Fysion
 
-	picker := widget.NewSelect([]string{"Desktop", "iPhone 15 Max"}, func(string) {})
-	picker.Selected = "Desktop"
-
-	preview := container.NewBorder(container.NewHBox(picker), nil, nil, nil, container.NewCenter(window))
-	content := container.NewStack(canvas.NewRectangle(color.Gray{Y: 0xee}),
-		container.NewPadded(preview))
+Please open a file from the tree on the left`)
 
 	g.content = container.NewDocTabs(
-		container.NewTabItem("Preview", content),
+		container.NewTabItem("Home", home),
 	)
 	g.content.CloseIntercept = func(item *container.TabItem) {
 		var u fyne.URI
@@ -160,14 +152,37 @@ func (g *gui) openFile(u fyne.URI) error {
 		return err
 	}
 
-	item := container.NewTabItem(u.Name(), edit)
+	name := u.Name()
+	item := container.NewTabItem(name, edit)
 	if g.openTabs == nil {
 		g.openTabs = make(map[fyne.URI]*container.TabItem)
 	}
 	g.openTabs[u] = item
 
+	for _, tab := range g.content.Items {
+		if tab.Text != name {
+			continue
+		}
+
+		// fix tab
+		for uri, child := range g.openTabs {
+			if child != tab {
+				continue
+			}
+
+			parent, _ := storage.Parent(uri)
+			tab.Text = parent.Name() + string([]rune{filepath.Separator}) + tab.Text
+		}
+
+		// fix item
+		parent, _ := storage.Parent(u)
+		item.Text = parent.Name() + string([]rune{filepath.Separator}) + item.Text
+		break
+	}
+
 	g.content.Append(item)
 	g.content.Select(item)
+
 	return nil
 }
 

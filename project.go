@@ -38,6 +38,41 @@ go 1.17
 
 require fyne.io/fyne/v2 v2.4.0
 `, name))
+	if err != nil {
+		return nil, err
+	}
+
+	json, err := storage.Child(dir, "main.gui.json")
+	if err != nil {
+		return nil, err
+	}
+
+	w, err = storage.Writer(json)
+	if err != nil {
+		return nil, err
+	}
+	defer w.Close()
+
+	_, err = io.WriteString(w, fmt.Sprintf(`{
+  "Type": "*widget.Label",
+  "Name": "",
+  "Struct": {
+    "Hidden": false,
+    "Text": "Welcome %s!",
+    "Alignment": 0,
+    "Wrapping": 0,
+    "TextStyle": {
+      "Bold": false,
+      "Italic": false,
+      "Monospace": false,
+      "Symbol": false,
+      "TabWidth": 0
+    },
+    "Truncation": 0,
+    "Importance": 0
+  }
+}
+`, name))
 
 	list, _ := storage.ListerForURI(dir)
 	return list, err

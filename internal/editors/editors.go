@@ -12,10 +12,11 @@ import (
 )
 
 var extentions = map[string]func(fyne.URI) (fyne.CanvasObject, error){
-	".go":  makeGo,
-	".md":  makeTxt,
-	".png": makeImg,
-	".txt": makeTxt,
+	".go":   makeGo,
+	".json": makeGUI,
+	".md":   makeTxt,
+	".png":  makeImg,
+	".txt":  makeTxt,
 }
 
 var mimes = map[string]func(fyne.URI) (fyne.CanvasObject, error){
