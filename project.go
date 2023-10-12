@@ -54,22 +54,24 @@ require fyne.io/fyne/v2 v2.4.0
 	defer w.Close()
 
 	_, err = io.WriteString(w, fmt.Sprintf(`{
-  "Type": "*widget.Label",
-  "Name": "",
-  "Struct": {
-    "Hidden": false,
-    "Text": "Welcome %s!",
-    "Alignment": 0,
-    "Wrapping": 0,
-    "TextStyle": {
-      "Bold": false,
-      "Italic": false,
-      "Monospace": false,
-      "Symbol": false,
-      "TabWidth": 0
-    },
-    "Truncation": 0,
-    "Importance": 0
+  "Object": {
+    "Type": "*widget.Label",
+    "Name": "",
+    "Struct": {
+      "Hidden": false,
+      "Text": "Welcome %s!",
+      "Alignment": 0,
+      "Wrapping": 0,
+      "TextStyle": {
+        "Bold": false,
+        "Italic": false,
+        "Monospace": false,
+        "Symbol": false,
+        "TabWidth": 0
+      },
+      "Truncation": 0,
+      "Importance": 0
+    }
   }
 }
 `, name))

@@ -8,6 +8,7 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/storage"
 	"fyne.io/fyne/v2/widget"
+
 	"github.com/fyne-io/defyne/pkg/gui"
 )
 
@@ -17,7 +18,10 @@ func makeGUI(u fyne.URI) (fyne.CanvasObject, error) {
 		return nil, err
 	}
 
-	obj, _ := gui.DecodeJSON(r)
+	obj, _, err := gui.DecodeJSON(r)
+	if err != nil {
+		return nil, err
+	}
 
 	// TODO get project title, from project type when we add it
 	name := "Preview" // g.title.Get()

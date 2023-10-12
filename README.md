@@ -17,6 +17,7 @@ To check out the code from an old episode just `git checkout <tag>` where the ta
 * **ep3**: Project Creation Wizard
 * **ep4**: File Tree and Editor Layout
 * **ep5**: Opening Multiple Files
+* **ep6**: GUI Files and Unit Tests
 
 ## License
 
