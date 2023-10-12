@@ -12,11 +12,11 @@ import (
 )
 
 var extentions = map[string]func(fyne.URI) (fyne.CanvasObject, error){
-	".go":   makeGo,
-	".json": makeGUI,
-	".md":   makeTxt,
-	".png":  makeImg,
-	".txt":  makeTxt,
+	".go":       makeGo,
+	".gui.json": makeGUI,
+	".md":       makeTxt,
+	".png":      makeImg,
+	".txt":      makeTxt,
 }
 
 var mimes = map[string]func(fyne.URI) (fyne.CanvasObject, error){
@@ -24,10 +24,19 @@ var mimes = map[string]func(fyne.URI) (fyne.CanvasObject, error){
 }
 
 func ForURI(u fyne.URI) (fyne.CanvasObject, error) {
-	ext := strings.ToLower(u.Extension())
-	edit, ok := extentions[ext]
-	if !ok {
-		edit, ok = mimes[u.MimeType()]
+	name := strings.ToLower(u.Name())
+	var matched func(fyne.URI) (fyne.CanvasObject, error)
+	for ext, edit := range extentions {
+		pos := strings.LastIndex(name, ext)
+		if pos == -1 || pos != len(name)-len(ext) {
+			continue
+		}
+
+		matched = edit
+		break
+	}
+	if matched == nil {
+		edit, ok := mimes[u.MimeType()]
 		if !ok {
 			return nil, errors.New("unable to find editor for file: " + u.Name() + ", mime: " + u.MimeType())
 		}
@@ -35,7 +44,7 @@ func ForURI(u fyne.URI) (fyne.CanvasObject, error) {
 		return edit(u)
 	}
 
-	return edit(u)
+	return matched(u)
 }
 
 func makeGo(u fyne.URI) (fyne.CanvasObject, error) {
