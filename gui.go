@@ -4,6 +4,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -59,8 +60,7 @@ func (g *gui) makeGUI() fyne.CanvasObject {
 		l := obj.(*widget.Label)
 		u, _ := data.(binding.URI).Get()
 
-		name := u.Name()
-		l.SetText(name)
+		l.SetText(filterName(u.Name()))
 	})
 	files.OnSelected = func(id widget.TreeNodeID) {
 		u, err := g.fileTree.GetValue(id)
@@ -152,7 +152,7 @@ func (g *gui) openFile(u fyne.URI) error {
 		return err
 	}
 
-	name := u.Name()
+	name := filterName(u.Name())
 	item := container.NewTabItem(name, edit)
 	if g.openTabs == nil {
 		g.openTabs = make(map[fyne.URI]*container.TabItem)
@@ -266,4 +266,13 @@ func (g *gui) makeCreateDetail(wizard *dialogs.Wizard) fyne.CanvasObject {
 	}
 
 	return form
+}
+
+func filterName(name string) string {
+	pos := strings.LastIndex(name, ".gui.json")
+	if pos != -1 && pos == len(name)-9 {
+		name = name[:len(name)-5]
+	}
+
+	return name
 }
