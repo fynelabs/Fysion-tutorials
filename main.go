@@ -12,7 +12,7 @@ import (
 )
 
 func main() {
-	a := app.New()
+	a := app.NewWithID("app.fysion")
 	a.Settings().SetTheme(newFysionTheme())
 	w := a.NewWindow("Fysion App")
 	w.SetPadded(false)
