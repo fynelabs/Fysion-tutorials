@@ -15,8 +15,8 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
-	"fysion.app/internal/dialogs"
-	"fysion.app/internal/editors"
+	"fysion.app/fysion/internal/dialogs"
+	"fysion.app/fysion/internal/editors"
 )
 
 type gui struct {

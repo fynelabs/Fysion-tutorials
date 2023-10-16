@@ -1,6 +1,6 @@
-module fysion.app
+module fysion.app/fysion
 
-go 1.20
+go 1.17
 
 require fyne.io/fyne/v2 v2.4.1-0.20231004175827-d530122f8b39
 
