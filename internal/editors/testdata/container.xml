@@ -1,0 +1,18 @@
+<canvas size="77x75">
+	<content>
+		<container size="77x75">
+			<widget size="77x35" type="*widget.Label">
+				<widget size="77x35" type="*widget.RichText">
+					<text pos="8,8" size="60x19">Welcome</text>
+				</widget>
+			</widget>
+			<widget pos="0,39" size="77x36" type="*widget.Button">
+				<rectangle fillColor="button" radius="4" size="77x36"/>
+				<rectangle size="77x36"/>
+				<widget pos="8,8" size="61x19" type="*widget.RichText">
+					<text alignment="center" bold size="61x19">A button</text>
+				</widget>
+			</widget>
+		</container>
+	</content>
+</canvas>

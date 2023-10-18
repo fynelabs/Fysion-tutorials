@@ -56,23 +56,42 @@ require fyne.io/fyne/v2 v2.4.0
 
 	_, err = io.WriteString(w, fmt.Sprintf(`{
   "Object": {
-    "Type": "*widget.Label",
+    "Type": "*fyne.Container",
+    "Layout": "VBox",
     "Name": "",
-    "Struct": {
-      "Hidden": false,
-      "Text": "Welcome %s!",
-      "Alignment": 0,
-      "Wrapping": 0,
-      "TextStyle": {
-        "Bold": false,
-        "Italic": false,
-        "Monospace": false,
-        "Symbol": false,
-        "TabWidth": 0
+    "Objects": [
+      {
+        "Type": "*widget.Label",
+        "Name": "",
+        "Struct": {
+          "Hidden": false,
+          "Text": "Welcome",
+          "Alignment": 0,
+          "Wrapping": 0,
+          "TextStyle": {
+            "Bold": false,
+            "Italic": false,
+            "Monospace": false,
+            "Symbol": false,
+            "TabWidth": 0
+          },
+          "Truncation": 0,
+          "Importance": 0
+        }
       },
-      "Truncation": 0,
-      "Importance": 0
-    }
+      {
+        "Type": "*widget.Button",
+        "Name": "",
+        "Struct": {
+          "Hidden": false,
+          "Text": "A button",
+          "Icon": null,
+          "Importance": 0,
+          "Alignment": 0,
+          "IconPlacement": 0
+        }
+      }
+    ]
   }
 }
 `, name))

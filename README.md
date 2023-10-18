@@ -12,12 +12,13 @@ You will need to have the development tools required for Fyne - check https://de
 
 To check out the code from an old episode just `git checkout <tag>` where the tag is one of:
 
-* **ep1**: Setup, layout and theme
-* **ep2**: Packaging and Folder Open
-* **ep3**: Project Creation Wizard
-* **ep4**: File Tree and Editor Layout
-* **ep5**: Opening Multiple Files
+* **ep7**: Theme Editor and Preview
 * **ep6**: GUI Files and Unit Tests
+* **ep5**: Opening Multiple Files
+* **ep4**: File Tree and Editor Layout
+* **ep3**: Project Creation Wizard
+* **ep2**: Packaging and Folder Open
+* **ep1**: Setup, layout and theme
 
 ## License
 

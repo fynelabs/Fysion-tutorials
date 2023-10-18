@@ -27,7 +27,7 @@ func makeGUI(u fyne.URI) (fyne.CanvasObject, fyne.CanvasObject, error) {
 		return nil, nil, err
 	}
 	bg := canvas.NewRectangle(theme.BackgroundColor())
-	inner := container.NewStack(bg, obj)
+	inner := container.NewStack(bg, container.NewPadded(obj))
 
 	// TODO get project title, from project type when we add it
 	name := "Preview" // g.title.Get()
@@ -53,6 +53,9 @@ func makePalette(obj fyne.CanvasObject) fyne.CanvasObject {
 	bg := newColorButton(theme.ColorNameBackground, th, func() {
 		setPreviewTheme(obj, th)
 	})
+	button := newColorButton(theme.ColorNameButton, th, func() {
+		setPreviewTheme(obj, th)
+	})
 
 	var light, dark *widget.Button
 	light = widget.NewButton("Light", func() {
@@ -61,6 +64,7 @@ func makePalette(obj fyne.CanvasObject) fyne.CanvasObject {
 		// TODO update in a loop?
 		fg.update()
 		bg.update()
+		button.update()
 
 		light.Importance = widget.HighImportance
 		dark.Importance = widget.MediumImportance
@@ -73,6 +77,7 @@ func makePalette(obj fyne.CanvasObject) fyne.CanvasObject {
 		setPreviewTheme(obj, th)
 		fg.update()
 		bg.update()
+		button.update()
 
 		light.Importance = widget.MediumImportance
 		dark.Importance = widget.HighImportance
@@ -84,7 +89,10 @@ func makePalette(obj fyne.CanvasObject) fyne.CanvasObject {
 	form := container.New(layout.NewFormLayout(),
 		widget.NewRichTextFromMarkdown("## Brand"), layout.NewSpacer(),
 		widget.NewLabel("Text"), fg,
-		widget.NewLabel("Background"), bg)
+		widget.NewLabel("Background"), bg,
+		widget.NewRichTextFromMarkdown("## Widgets"), layout.NewSpacer(),
+		widget.NewLabel("Button"), button,
+	)
 
 	return container.NewVBox(variants, form)
 }
