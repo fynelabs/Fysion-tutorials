@@ -2,7 +2,7 @@ module fysion.app/fysion
 
 go 1.17
 
-require fyne.io/fyne/v2 v2.4.1-0.20231004175827-d530122f8b39
+require fyne.io/fyne/v2 v2.4.1
 
 require (
 	fyne.io/systray v1.10.1-0.20230722100817-88df1e0ffa9a // indirect
@@ -34,3 +34,5 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	honnef.co/go/js/dom v0.0.0-20210725211120-f030747120f2 // indirect
 )
+
+replace fyne.io/fyne/v2 => github.com/andydotxyz/fyne/v2 v2.2.0-rc1.0.20231018111053-20135cb103a5

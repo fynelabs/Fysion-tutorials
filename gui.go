@@ -26,6 +26,7 @@ type gui struct {
 	fileTree binding.URITree
 	content  *container.DocTabs
 	openTabs map[fyne.URI]*container.TabItem
+	palette  *fyne.Container
 }
 
 func (g *gui) makeBanner() fyne.CanvasObject {
@@ -90,7 +91,8 @@ func (g *gui) makeGUI() fyne.CanvasObject {
 	left.Open(0)
 	left.MultiOpen = true
 
-	right := widget.NewRichTextFromMarkdown("## Settings")
+	rightTop := widget.NewRichTextFromMarkdown("## Settings")
+	g.palette = container.NewVBox(rightTop)
 
 	home := widget.NewRichTextFromMarkdown(`
 # Welcome to Fysion
@@ -129,8 +131,8 @@ Please open a file from the tree on the left`)
 	dividers := [3]fyne.CanvasObject{
 		widget.NewSeparator(), widget.NewSeparator(), widget.NewSeparator(),
 	}
-	objs := []fyne.CanvasObject{g.content, top, left, right, dividers[0], dividers[1], dividers[2]}
-	return container.New(newFysionLayout(top, left, right, g.content, dividers), objs...)
+	objs := []fyne.CanvasObject{g.content, top, left, g.palette, dividers[0], dividers[1], dividers[2]}
+	return container.New(newFysionLayout(top, left, g.palette, g.content, dividers), objs...)
 }
 
 func (g *gui) makeMenu() *fyne.MainMenu {
@@ -147,9 +149,12 @@ func (g *gui) openFile(u fyne.URI) error {
 		return nil
 	}
 
-	edit, err := editors.ForURI(u)
+	edit, palette, err := editors.ForURI(u)
 	if err != nil {
 		return err
+	}
+	if palette != nil {
+		g.palette.Add(palette)
 	}
 
 	name := filterName(u.Name())
