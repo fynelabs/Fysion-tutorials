@@ -46,25 +46,29 @@ func makeGUI(u fyne.URI) (fyne.CanvasObject, fyne.CanvasObject, error) {
 
 func makePalette(obj fyne.CanvasObject) fyne.CanvasObject {
 	th := newEditableTheme()
+	form := container.New(layout.NewFormLayout())
 
-	fg := newColorButton(theme.ColorNameForeground, th, func() {
+	// use this to ask our inputs to update on theme change
+	type updatable interface {
+		update()
+	}
+
+	updatePreview := func() {
 		setPreviewTheme(obj, th)
-	})
-	bg := newColorButton(theme.ColorNameBackground, th, func() {
-		setPreviewTheme(obj, th)
-	})
-	button := newColorButton(theme.ColorNameButton, th, func() {
-		setPreviewTheme(obj, th)
-	})
+	}
+	updateInputs := func() {
+		for _, i := range form.Objects {
+			if b, ok := i.(updatable); ok {
+				b.update()
+			}
+		}
+	}
 
 	var light, dark *widget.Button
 	light = widget.NewButton("Light", func() {
 		th.variant = theme.VariantLight
 		setPreviewTheme(obj, th)
-		// TODO update in a loop?
-		fg.update()
-		bg.update()
-		button.update()
+		updateInputs()
 
 		light.Importance = widget.HighImportance
 		dark.Importance = widget.MediumImportance
@@ -75,9 +79,7 @@ func makePalette(obj fyne.CanvasObject) fyne.CanvasObject {
 	dark = widget.NewButton("Dark", func() {
 		th.variant = theme.VariantDark
 		setPreviewTheme(obj, th)
-		fg.update()
-		bg.update()
-		button.update()
+		updateInputs()
 
 		light.Importance = widget.MediumImportance
 		dark.Importance = widget.HighImportance
@@ -86,13 +88,13 @@ func makePalette(obj fyne.CanvasObject) fyne.CanvasObject {
 	})
 	variants := container.NewGridWithColumns(2, light, dark)
 
-	form := container.New(layout.NewFormLayout(),
+	form.Objects = []fyne.CanvasObject{
 		widget.NewRichTextFromMarkdown("## Brand"), layout.NewSpacer(),
-		widget.NewLabel("Text"), fg,
-		widget.NewLabel("Background"), bg,
+		widget.NewLabel("Text"), newColorButton(theme.ColorNameForeground, th, updatePreview),
+		widget.NewLabel("Background"), newColorButton(theme.ColorNameBackground, th, updatePreview),
 		widget.NewRichTextFromMarkdown("## Widgets"), layout.NewSpacer(),
-		widget.NewLabel("Button"), button,
-	)
+		widget.NewLabel("Button"), newColorButton(theme.ColorNameButton, th, updatePreview),
+	}
 
 	return container.NewVBox(variants, form)
 }
