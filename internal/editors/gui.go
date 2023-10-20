@@ -1,6 +1,7 @@
 package editors
 
 import (
+	"fmt"
 	"image/color"
 
 	"fyne.io/fyne/v2"
@@ -121,7 +122,7 @@ func newColorButton(n fyne.ThemeColorName, th *editableTheme, fn func()) *colorB
 		fn()
 	}
 
-	rect = newSwatch(col, fyne.NewSquareSize(text.MinSize().Height), func(col color.Color) {
+	rect = newSwatch(col, string(n), fyne.NewSquareSize(text.MinSize().Height), func(col color.Color) {
 		th.setColor(n, th.variant, col)
 		text.SetText(hexForColor(col))
 		fn()
@@ -145,15 +146,16 @@ func (c *colorButton) update() {
 type swatch struct {
 	widget.BaseWidget
 
-	r  *canvas.Rectangle
-	fn func(color.Color)
+	r    *canvas.Rectangle
+	fn   func(color.Color)
+	name string
 }
 
-func newSwatch(c color.Color, min fyne.Size, fn func(color.Color)) *swatch {
+func newSwatch(c color.Color, name string, min fyne.Size, fn func(color.Color)) *swatch {
 	r := canvas.NewRectangle(c)
 	r.CornerRadius = theme.InputRadiusSize()
 	r.SetMinSize(min)
-	s := &swatch{r: r, fn: fn}
+	s := &swatch{r: r, fn: fn, name: name}
 	s.ExtendBaseWidget(s)
 	return s
 }
@@ -163,7 +165,8 @@ func (s *swatch) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (s *swatch) Tapped(_ *fyne.PointEvent) {
-	dialog.ShowColorPicker("Choose Color", "Pick a Color", func(col color.Color) {
+	title := fmt.Sprintf("Choose %s Color", s.name)
+	c := dialog.NewColorPicker(title, "", func(col color.Color) {
 		if col == nil {
 			return
 		}
@@ -171,6 +174,8 @@ func (s *swatch) Tapped(_ *fyne.PointEvent) {
 		s.setColor(col)
 		s.fn(col)
 	}, fyne.CurrentApp().Driver().AllWindows()[0])
+	c.Advanced = true
+	c.Show()
 }
 
 func (s *swatch) setColor(c color.Color) {
