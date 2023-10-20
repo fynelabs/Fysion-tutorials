@@ -1,7 +1,6 @@
 package editors
 
 import (
-	"fmt"
 	"image/color"
 
 	"fyne.io/fyne/v2"
@@ -103,44 +102,78 @@ type colorButton struct {
 	name  fyne.ThemeColorName
 	theme *editableTheme
 
-	r    *canvas.Rectangle
-	text *widget.Label
+	rect *swatch
+	text *widget.Entry
 	fn   func()
 }
 
 func newColorButton(n fyne.ThemeColorName, th *editableTheme, fn func()) *colorButton {
 	col := th.Color(n, th.variant)
-	text := widget.NewLabel(hexForColor(col))
-	r := canvas.NewRectangle(col)
-	r.SetMinSize(fyne.NewSquareSize(text.MinSize().Height))
-	b := &colorButton{r: r, text: text, name: n, theme: th, fn: fn}
+	var rect *swatch
+
+	text := widget.NewEntry()
+	text.Text = hexForColor(col)
+	text.OnChanged = func(s string) {
+		c := colorForHex(s)
+
+		th.setColor(n, th.variant, c)
+		rect.setColor(c)
+		fn()
+	}
+
+	rect = newSwatch(col, fyne.NewSquareSize(text.MinSize().Height), func(col color.Color) {
+		th.setColor(n, th.variant, col)
+		text.SetText(hexForColor(col))
+		fn()
+	})
+
+	b := &colorButton{rect: rect, text: text, name: n, theme: th, fn: fn}
 	b.ExtendBaseWidget(b)
 	return b
 }
 
 func (c *colorButton) CreateRenderer() fyne.WidgetRenderer {
-	return widget.NewSimpleRenderer(container.NewBorder(nil, nil, c.r, nil, c.text))
-}
-
-func (c *colorButton) Tapped(_ *fyne.PointEvent) {
-	dialog.ShowColorPicker("Choose Color", "Pick a Color", func(col color.Color) {
-		if c == nil {
-			return
-		}
-
-		c.theme.setColor(c.name, c.theme.variant, col)
-		c.update()
-		c.fn()
-	}, fyne.CurrentApp().Driver().AllWindows()[0])
+	return widget.NewSimpleRenderer(container.NewBorder(nil, nil, c.rect, nil, c.text))
 }
 
 func (c *colorButton) update() {
-	c.r.FillColor = c.theme.Color(c.name, c.theme.variant)
-	c.r.Refresh()
-	c.text.SetText(hexForColor(c.r.FillColor))
+	col := c.theme.Color(c.name, c.theme.variant)
+	c.rect.setColor(col)
+	c.text.SetText(hexForColor(col))
 }
 
-func hexForColor(c color.Color) string {
-	ch := color.RGBAModel.Convert(c).(color.RGBA)
-	return fmt.Sprintf("#%.2x%.2x%.2x", ch.R, ch.G, ch.B)
+type swatch struct {
+	widget.BaseWidget
+
+	r  *canvas.Rectangle
+	fn func(color.Color)
+}
+
+func newSwatch(c color.Color, min fyne.Size, fn func(color.Color)) *swatch {
+	r := canvas.NewRectangle(c)
+	r.CornerRadius = theme.InputRadiusSize()
+	r.SetMinSize(min)
+	s := &swatch{r: r, fn: fn}
+	s.ExtendBaseWidget(s)
+	return s
+}
+
+func (s *swatch) CreateRenderer() fyne.WidgetRenderer {
+	return widget.NewSimpleRenderer(s.r)
+}
+
+func (s *swatch) Tapped(_ *fyne.PointEvent) {
+	dialog.ShowColorPicker("Choose Color", "Pick a Color", func(col color.Color) {
+		if col == nil {
+			return
+		}
+
+		s.setColor(col)
+		s.fn(col)
+	}, fyne.CurrentApp().Driver().AllWindows()[0])
+}
+
+func (s *swatch) setColor(c color.Color) {
+	s.r.FillColor = c
+	s.r.Refresh()
 }
