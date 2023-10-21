@@ -90,13 +90,40 @@ func makePalette(obj fyne.CanvasObject) fyne.CanvasObject {
 
 	form.Objects = []fyne.CanvasObject{
 		widget.NewRichTextFromMarkdown("## Brand"), layout.NewSpacer(),
-		widget.NewLabel("Text"), newColorButton(theme.ColorNameForeground, th, updatePreview),
+		widget.NewLabel("Foreground"), newColorButton(theme.ColorNameForeground, th, updatePreview),
 		widget.NewLabel("Background"), newColorButton(theme.ColorNameBackground, th, updatePreview),
+		widget.NewLabel("Highlight"), newColorButton(theme.ColorNamePrimary, th, updatePreview),
+
+		widget.NewRichTextFromMarkdown("## Button"), layout.NewSpacer(),
+		widget.NewLabel("Background"), newColorButton(theme.ColorNameButton, th, updatePreview),
+		widget.NewLabel("Pressed"), newColorButton(theme.ColorNamePressed, th, updatePreview),
+		widget.NewLabel("Disabled"), newColorButton(theme.ColorNameDisabledButton, th, updatePreview),
+
 		widget.NewRichTextFromMarkdown("## Widgets"), layout.NewSpacer(),
-		widget.NewLabel("Button"), newColorButton(theme.ColorNameButton, th, updatePreview),
+		widget.NewLabel("Hyperlink"), newColorButton(theme.ColorNameHyperlink, th, updatePreview),
+		widget.NewLabel("Header Bg"), newColorButton(theme.ColorNameHeaderBackground, th, updatePreview),
+		widget.NewLabel("Input Bg"), newColorButton(theme.ColorNameInputBackground, th, updatePreview),
+		widget.NewLabel("Input Border"), newColorButton(theme.ColorNameInputBorder, th, updatePreview),
+		widget.NewLabel("PlaceHolder"), newColorButton(theme.ColorNamePlaceHolder, th, updatePreview),
+		widget.NewLabel("ScrollBar"), newColorButton(theme.ColorNameScrollBar, th, updatePreview),
+		widget.NewLabel("Separator"), newColorButton(theme.ColorNameSeparator, th, updatePreview),
+
+		widget.NewRichTextFromMarkdown("## State"), layout.NewSpacer(),
+		widget.NewLabel("Hover"), newColorButton(theme.ColorNameHover, th, updatePreview),
+		widget.NewLabel("Focus"), newColorButton(theme.ColorNameFocus, th, updatePreview),
+		widget.NewLabel("Selection"), newColorButton(theme.ColorNameSelection, th, updatePreview),
+		widget.NewLabel("Disabled"), newColorButton(theme.ColorNameDisabled, th, updatePreview),
+
+		widget.NewRichTextFromMarkdown("## Other"), layout.NewSpacer(),
+		widget.NewLabel("Shadow"), newColorButton(theme.ColorNameShadow, th, updatePreview),
+		widget.NewLabel("Menu Bg"), newColorButton(theme.ColorNameMenuBackground, th, updatePreview),
+		widget.NewLabel("Overlay Bg"), newColorButton(theme.ColorNameOverlayBackground, th, updatePreview),
+		widget.NewLabel("Error"), newColorButton(theme.ColorNameError, th, updatePreview),
+		widget.NewLabel("Success"), newColorButton(theme.ColorNameSuccess, th, updatePreview),
+		widget.NewLabel("Warning"), newColorButton(theme.ColorNameWarning, th, updatePreview),
 	}
 
-	return container.NewVBox(variants, form)
+	return container.NewBorder(variants, nil, nil, nil, container.NewScroll(form))
 }
 
 type colorButton struct {
