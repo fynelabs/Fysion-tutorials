@@ -65,7 +65,7 @@ require fyne.io/fyne/v2 v2.4.0
         "Name": "",
         "Struct": {
           "Hidden": false,
-          "Text": "Welcome",
+          "Text": "Welcome %s!",
           "Alignment": 0,
           "Wrapping": 0,
           "TextStyle": {
