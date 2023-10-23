@@ -11,6 +11,7 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/dialog"
+	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/storage"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
@@ -25,8 +26,13 @@ type gui struct {
 
 	fileTree binding.URITree
 	content  *container.DocTabs
-	openTabs map[fyne.URI]*container.TabItem
+	openTabs map[fyne.URI]*tabItem
 	palette  *fyne.Container
+}
+
+type tabItem struct {
+	editor editors.Editor
+	tab    *container.TabItem
 }
 
 func (g *gui) makeBanner() fyne.CanvasObject {
@@ -105,7 +111,7 @@ Please open a file from the tree on the left`)
 	g.content.CloseIntercept = func(item *container.TabItem) {
 		var u fyne.URI
 		for child, childItem := range g.openTabs {
-			if childItem == item {
+			if childItem.tab == item {
 				u = child
 			}
 		}
@@ -118,8 +124,9 @@ Please open a file from the tree on the left`)
 	g.content.OnSelected = func(item *container.TabItem) {
 		var u fyne.URI
 		for child, childItem := range g.openTabs {
-			if childItem == item {
+			if childItem.tab == item {
 				u = child
+				g.setPalette(childItem.editor)
 			}
 		}
 
@@ -136,8 +143,26 @@ Please open a file from the tree on the left`)
 }
 
 func (g *gui) makeMenu() *fyne.MainMenu {
+	save := fyne.NewMenuItem("Save", func() {
+		current := g.content.Selected()
+		for _, child := range g.openTabs {
+			if child.tab != current {
+				continue
+			}
+
+			err := child.editor.Save()
+			if err != nil {
+				dialog.ShowError(err, g.win)
+			}
+			break
+		}
+	})
+	save.Shortcut = &desktop.CustomShortcut{KeyName: fyne.KeyS, Modifier: fyne.KeyModifierShortcutDefault}
+
 	file := fyne.NewMenu("File",
 		fyne.NewMenuItem("Open Project", g.openProjectDialog),
+		fyne.NewMenuItemSeparator(),
+		save,
 	)
 
 	return fyne.NewMainMenu(file)
@@ -145,24 +170,33 @@ func (g *gui) makeMenu() *fyne.MainMenu {
 
 func (g *gui) openFile(u fyne.URI) error {
 	if item, ok := g.openTabs[u]; ok {
-		g.content.Select(item)
+		g.content.Select(item.tab)
 		return nil
 	}
 
-	edit, palette, err := editors.ForURI(u)
+	edit, err := editors.ForURI(u)
 	if err != nil {
 		return err
 	}
-	if palette != nil {
-		g.palette.Add(palette)
-	}
+	g.setPalette(edit)
 
 	name := filterName(u.Name())
-	item := container.NewTabItem(name, edit)
+	item := container.NewTabItem(name, edit.Content())
 	if g.openTabs == nil {
-		g.openTabs = make(map[fyne.URI]*container.TabItem)
+		g.openTabs = make(map[fyne.URI]*tabItem)
 	}
-	g.openTabs[u] = item
+	g.openTabs[u] = &tabItem{editor: edit, tab: item}
+
+	dirty := edit.Edited()
+	dirty.AddListener(binding.NewDataListener(func() {
+		isDirty, _ := dirty.Get()
+		if isDirty {
+			item.Text = name + " *"
+		} else {
+			item.Text = name
+		}
+		g.content.Refresh()
+	}))
 
 	for _, tab := range g.content.Items {
 		if tab.Text != name {
@@ -171,7 +205,7 @@ func (g *gui) openFile(u fyne.URI) error {
 
 		// fix tab
 		for uri, child := range g.openTabs {
-			if child != tab {
+			if child.tab != tab {
 				continue
 			}
 
@@ -203,6 +237,16 @@ func (g *gui) openProjectDialog() {
 
 		g.openProject(dir)
 	}, g.win)
+}
+
+func (g *gui) setPalette(e editors.Editor) {
+	palette := e.Palette()
+	items := g.palette.Objects[:1]
+	if palette != nil {
+		items = append(items, palette)
+	}
+	g.palette.Objects = items
+	g.palette.Refresh()
 }
 
 func (g *gui) showCreate(w fyne.Window) {

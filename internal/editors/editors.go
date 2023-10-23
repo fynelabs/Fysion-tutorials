@@ -2,16 +2,15 @@ package editors
 
 import (
 	"errors"
-	"io"
 	"strings"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
-	"fyne.io/fyne/v2/storage"
+	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/widget"
 )
 
-var extentions = map[string]func(fyne.URI) (fyne.CanvasObject, fyne.CanvasObject, error){
+var extentions = map[string]func(fyne.URI) (Editor, error){
 	".go":       makeGo,
 	".gui.json": makeGUI,
 	".md":       makeTxt,
@@ -19,13 +18,21 @@ var extentions = map[string]func(fyne.URI) (fyne.CanvasObject, fyne.CanvasObject
 	".txt":      makeTxt,
 }
 
-var mimes = map[string]func(fyne.URI) (fyne.CanvasObject, fyne.CanvasObject, error){
+var mimes = map[string]func(fyne.URI) (Editor, error){
 	"text/plain": makeTxt,
 }
 
-func ForURI(u fyne.URI) (fyne.CanvasObject, fyne.CanvasObject, error) {
+type Editor interface {
+	Content() fyne.CanvasObject
+	Palette() fyne.CanvasObject
+
+	Edited() binding.Bool
+	Save() error
+}
+
+func ForURI(u fyne.URI) (Editor, error) {
 	name := strings.ToLower(u.Name())
-	var matched func(fyne.URI) (fyne.CanvasObject, fyne.CanvasObject, error)
+	var matched func(fyne.URI) (Editor, error)
 	for ext, edit := range extentions {
 		pos := strings.LastIndex(name, ext)
 		if pos == -1 || pos != len(name)-len(ext) {
@@ -38,7 +45,7 @@ func ForURI(u fyne.URI) (fyne.CanvasObject, fyne.CanvasObject, error) {
 	if matched == nil {
 		edit, ok := mimes[u.MimeType()]
 		if !ok {
-			return nil, nil, errors.New("unable to find editor for file: " + u.Name() + ", mime: " + u.MimeType())
+			return nil, errors.New("unable to find editor for file: " + u.Name() + ", mime: " + u.MimeType())
 		}
 
 		return edit(u)
@@ -47,32 +54,53 @@ func ForURI(u fyne.URI) (fyne.CanvasObject, fyne.CanvasObject, error) {
 	return matched(u)
 }
 
-func makeGo(u fyne.URI) (fyne.CanvasObject, fyne.CanvasObject, error) {
+func makeGo(u fyne.URI) (Editor, error) {
 	// TODO code editor
-	code, _, err := makeTxt(u)
+	code, err := makeTxt(u)
 	if code != nil {
-		code.(*widget.Entry).TextStyle = fyne.TextStyle{Monospace: true}
+		code.(*simpleEditor).content.(*widget.Entry).TextStyle = fyne.TextStyle{Monospace: true}
 	}
 
-	return code, nil, err
+	return code, err
 }
 
-func makeImg(u fyne.URI) (fyne.CanvasObject, fyne.CanvasObject, error) {
+func makeImg(u fyne.URI) (Editor, error) {
 	img := canvas.NewImageFromURI(u)
 	img.FillMode = canvas.ImageFillContain
-	return img, nil, nil
+	return &simpleEditor{content: img}, nil
 }
 
-func makeTxt(u fyne.URI) (fyne.CanvasObject, fyne.CanvasObject, error) {
-	code := widget.NewEntry()
+type simpleEditor struct {
+	content, palette fyne.CanvasObject
+	edited           binding.Bool
 
-	r, err := storage.Reader(u)
-	if err != nil {
-		return nil, nil, err
+	save func() error
+}
+
+func (s *simpleEditor) Content() fyne.CanvasObject {
+	return s.content
+}
+
+func (s *simpleEditor) Palette() fyne.CanvasObject {
+	return s.palette
+}
+
+func (s *simpleEditor) Edited() binding.Bool {
+	if s.edited == nil {
+		s.edited = binding.NewBool()
 	}
 
-	defer r.Close()
-	data, err := io.ReadAll(r)
-	code.SetText(string(data))
-	return code, nil, err
+	return s.edited
+}
+
+func (s *simpleEditor) Save() error {
+	if s.save == nil {
+		return nil
+	}
+
+	err := s.save()
+	if err == nil {
+		s.Edited().Set(false)
+	}
+	return err
 }

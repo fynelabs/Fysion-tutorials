@@ -16,15 +16,15 @@ import (
 	"github.com/fyne-io/defyne/pkg/gui"
 )
 
-func makeGUI(u fyne.URI) (fyne.CanvasObject, fyne.CanvasObject, error) {
+func makeGUI(u fyne.URI) (Editor, error) {
 	r, err := storage.Reader(u)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	obj, _, err := gui.DecodeJSON(r)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	bg := canvas.NewRectangle(theme.BackgroundColor())
 	inner := container.NewStack(bg, container.NewPadded(obj))
@@ -41,7 +41,7 @@ func makeGUI(u fyne.URI) (fyne.CanvasObject, fyne.CanvasObject, error) {
 	content := container.NewStack(canvas.NewRectangle(color.Gray{Y: 0xee}),
 		container.NewPadded(preview))
 
-	return content, makePalette(inner), nil
+	return &simpleEditor{content: content, palette: makePalette(inner)}, nil
 }
 
 func makePalette(obj fyne.CanvasObject) fyne.CanvasObject {
