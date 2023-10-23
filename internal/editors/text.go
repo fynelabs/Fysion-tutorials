@@ -4,6 +4,7 @@ import (
 	"io"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/storage"
 	"fyne.io/fyne/v2/widget"
@@ -11,21 +12,28 @@ import (
 
 type codeEntry struct {
 	widget.Entry
+	win fyne.Window
 
 	save func() error
 }
 
-func newCodeEntry(s func() error) *codeEntry {
-	c := &codeEntry{save: s}
+func newCodeEntry(w fyne.Window) *codeEntry {
+	c := &codeEntry{win: w}
 	c.ExtendBaseWidget(c)
 
 	c.MultiLine = true
 	return c
 }
+
 func (c *codeEntry) TypedShortcut(s fyne.Shortcut) {
 	if sh, ok := s.(*desktop.CustomShortcut); ok {
 		if sh.Modifier == fyne.KeyModifierShortcutDefault && sh.KeyName == fyne.KeyS {
-			c.save()
+			if c.save != nil {
+				err := c.save()
+				if err != nil {
+					dialog.ShowError(err, c.win)
+				}
+			}
 			return
 		}
 	}
@@ -38,7 +46,7 @@ func makeTxt(u fyne.URI) (Editor, error) {
 	save := func() error {
 		return saveTxt(u, code.Text)
 	}
-	code = newCodeEntry(save)
+	code = newCodeEntry(fyne.CurrentApp().Driver().AllWindows()[0])
 
 	r, err := storage.Reader(u)
 	if err != nil {
@@ -52,6 +60,8 @@ func makeTxt(u fyne.URI) (Editor, error) {
 	code.OnChanged = func(_ string) {
 		edit.Edited().Set(true)
 	}
+	code.save = edit.Save
+
 	return edit, err
 }
 
