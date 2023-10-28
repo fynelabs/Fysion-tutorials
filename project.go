@@ -11,6 +11,22 @@ import (
 	"fyne.io/fyne/v2/storage"
 )
 
+func createFile(name string, dir fyne.URI, content string, data ...interface{}) error {
+	file, err := storage.Child(dir, name)
+	if err != nil {
+		return err
+	}
+
+	w, err := storage.Writer(file)
+	if err != nil {
+		return err
+	}
+	defer w.Close()
+
+	_, err = io.WriteString(w, fmt.Sprintf(content, data...))
+	return err
+}
+
 func createProject(name string, parent fyne.ListableURI) (fyne.ListableURI, error) {
 	dir, err := storage.Child(parent, name)
 	if err != nil {
@@ -22,39 +38,17 @@ func createProject(name string, parent fyne.ListableURI) (fyne.ListableURI, erro
 		return nil, err
 	}
 
-	mod, err := storage.Child(dir, "go.mod")
-	if err != nil {
-		return nil, err
-	}
+	err = createFile("go.mod", dir, `module %s
 
-	w, err := storage.Writer(mod)
-	if err != nil {
-		return nil, err
-	}
-	defer w.Close()
-
-	_, err = io.WriteString(w, fmt.Sprintf(`module %s
-	
 go 1.17
 
-require fyne.io/fyne/v2 v2.4.0
-`, sanitise(name)))
+require fyne.io/fyne/v2 v2.4.1
+`, sanitise(name))
 	if err != nil {
 		return nil, err
 	}
 
-	json, err := storage.Child(dir, "main.gui.json")
-	if err != nil {
-		return nil, err
-	}
-
-	w, err = storage.Writer(json)
-	if err != nil {
-		return nil, err
-	}
-	defer w.Close()
-
-	_, err = io.WriteString(w, fmt.Sprintf(`{
+	err = createFile("main.gui.json", dir, `{
   "Object": {
     "Type": "*fyne.Container",
     "Layout": "VBox",
