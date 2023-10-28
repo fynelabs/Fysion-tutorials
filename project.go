@@ -94,7 +94,10 @@ require fyne.io/fyne/v2 v2.4.0
     ]
   }
 }
-`, name))
+`, strings.ReplaceAll(name, "\"", "\\\""))
+	if err != nil {
+		return nil, err
+	}
 
 	list, _ := storage.ListerForURI(dir)
 	return list, err
