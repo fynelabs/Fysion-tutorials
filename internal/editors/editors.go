@@ -13,7 +13,7 @@ import (
 var extentions = map[string]func(fyne.URI) (Editor, error){
 	".go":       makeGo,
 	".gui.json": makeGUI,
-	".md":       makeTxt,
+	".md":       makeMarkdown,
 	".png":      makeImg,
 	".txt":      makeTxt,
 }
@@ -58,7 +58,7 @@ func makeGo(u fyne.URI) (Editor, error) {
 	// TODO code editor
 	code, err := makeTxt(u)
 	if code != nil {
-		code.(*simpleEditor).content.(*widget.Entry).TextStyle = fyne.TextStyle{Monospace: true}
+		code.(*simpleEditor).content.(*codeEntry).TextStyle = fyne.TextStyle{Monospace: true}
 	}
 
 	return code, err
@@ -68,6 +68,27 @@ func makeImg(u fyne.URI) (Editor, error) {
 	img := canvas.NewImageFromURI(u)
 	img.FillMode = canvas.ImageFillContain
 	return &simpleEditor{content: img}, nil
+}
+
+func makeMarkdown(u fyne.URI) (Editor, error) {
+	code, err := makeTxt(u)
+	if code == nil || err != nil {
+		return nil, err
+	}
+
+	txt := code.(*simpleEditor).content.(*codeEntry)
+	txt.TextStyle = fyne.TextStyle{Monospace: true}
+	txt.Refresh()
+
+	preview := widget.NewRichTextFromMarkdown(txt.Text)
+	dirty := txt.OnChanged
+	txt.OnChanged = func(s string) {
+		preview.ParseMarkdown(s)
+		dirty(s)
+	}
+	code.(*simpleEditor).content = container.NewHSplit(txt, container.NewScroll(preview))
+
+	return code, err
 }
 
 type simpleEditor struct {
