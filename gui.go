@@ -16,18 +16,19 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
+	"fysion.app/fysion/internal/app"
 	"fysion.app/fysion/internal/dialogs"
 	"fysion.app/fysion/internal/editors"
 )
 
 type gui struct {
-	win   fyne.Window
-	title binding.String
+	win     fyne.Window
+	project *projectBinding
 
 	fileTree binding.URITree
 	content  *container.DocTabs
 	openTabs map[fyne.URI]*tabItem
-	palette  *fyne.Container
+	palette  *container.AppTabs
 }
 
 type tabItem struct {
@@ -40,11 +41,13 @@ func (g *gui) makeBanner() fyne.CanvasObject {
 	title.TextSize = 14
 	title.TextStyle = fyne.TextStyle{Bold: true}
 
-	g.title.AddListener(binding.NewDataListener(func() {
-		name, _ := g.title.Get()
-		if name == "" {
-			name = "App Creator"
+	g.project.AddListener(binding.NewDataListener(func() {
+		p := g.project.GetProject()
+		name := "App Creator"
+		if p != nil {
+			name = p.Meta.Details.Name
 		}
+
 		title.Text = name
 		title.Refresh()
 	}))
@@ -97,8 +100,9 @@ func (g *gui) makeGUI() fyne.CanvasObject {
 	left.Open(0)
 	left.MultiOpen = true
 
-	rightTop := widget.NewRichTextFromMarkdown("## Settings")
-	g.palette = container.NewBorder(rightTop, nil, nil, nil)
+	g.palette = container.NewAppTabs(
+		container.NewTabItem("App", g.makeAppPalette()),
+	)
 
 	home := widget.NewRichTextFromMarkdown(`
 # Welcome to Fysion
@@ -142,7 +146,54 @@ Please open a file from the tree on the left`)
 	return container.New(newFysionLayout(top, left, g.palette, g.content, dividers), objs...)
 }
 
-func (g *gui) makeMenu() *fyne.MainMenu {
+func (g *gui) makeAppPalette() fyne.CanvasObject {
+	name := widget.NewEntry()
+	id := widget.NewEntry()
+	version := widget.NewEntry()
+
+	g.project.AddListener(binding.NewDataListener(func() {
+		p := g.project.GetProject()
+		if p == nil {
+			return
+		}
+		name.OnChanged = nil
+		id.OnChanged = nil
+		version.OnChanged = nil
+
+		name.SetText(p.Meta.Details.Name)
+		id.SetText(p.Meta.Details.ID)
+		version.SetText(p.Meta.Details.Version)
+
+		saveMeta := func(_ string) {
+			metaURI, _ := storage.Child(p.Dir, "FyneApp.toml")
+
+			data := p.Meta
+			data.Details.Name = name.Text
+			data.Details.ID = id.Text
+			data.Details.Version = version.Text
+
+			err := app.Save(data, metaURI)
+			if err != nil {
+				dialog.ShowError(err, g.win)
+			} else {
+				p = app.NewProject(p.Dir)
+				g.project.SetProject(p)
+			}
+		}
+
+		name.OnChanged = saveMeta
+		id.OnChanged = saveMeta
+		version.OnChanged = saveMeta
+	}))
+
+	return widget.NewForm(
+		widget.NewFormItem("Name", name),
+		widget.NewFormItem("ID", id),
+		widget.NewFormItem("Version", version),
+	)
+}
+
+func (g *gui) makeMenu(p fyne.Preferences) *fyne.MainMenu {
 	save := fyne.NewMenuItem("Save", func() {
 		current := g.content.Selected()
 		for _, child := range g.openTabs {
@@ -159,8 +210,19 @@ func (g *gui) makeMenu() *fyne.MainMenu {
 	})
 	save.Shortcut = &desktop.CustomShortcut{KeyName: fyne.KeyS, Modifier: fyne.KeyModifierShortcutDefault}
 
+	recent := fyne.NewMenuItem("Recent Projects...", nil)
+	recents := listRecents(p)
+	recentItems := make([]*fyne.MenuItem, len(recents))
+	for i, r := range recents {
+		recentItems[i] = fyne.NewMenuItem(r.name, func() {
+			g.openProject(r.dir)
+		})
+	}
+	recent.ChildMenu = fyne.NewMenu("Recents", recentItems...)
+
 	file := fyne.NewMenu("File",
 		fyne.NewMenuItem("Open Project", g.openProjectDialog),
+		recent,
 		fyne.NewMenuItemSeparator(),
 		save,
 	)
@@ -240,13 +302,14 @@ func (g *gui) openProjectDialog() {
 }
 
 func (g *gui) setPalette(e editors.Editor) {
-	palette := e.Palette()
-	items := g.palette.Objects[:1]
-	if palette != nil {
-		items = append(items, palette)
-	}
-	g.palette.Objects = items
+	palettes := e.Palettes()
+
+	g.palette.Items = append(g.palette.Items[:1], palettes...)
 	g.palette.Refresh()
+
+	if len(g.palette.Items) > 1 {
+		g.palette.SelectIndex(1)
+	}
 }
 
 func (g *gui) showCreate(w fyne.Window) {
@@ -259,12 +322,15 @@ Or open an existing one that you created earlier.`)
 		wizard.Hide()
 		g.openProjectDialog()
 	})
+	recent := widget.NewButton("Recent Projects", func() {
+		wizard.Push("Recent Projects", g.makeRecents(wizard))
+	})
 	create := widget.NewButton("Create Project", func() {
 		wizard.Push("Project Details", g.makeCreateDetail(wizard))
 	})
 	create.Importance = widget.HighImportance
 
-	buttons := container.NewGridWithColumns(2, open, create)
+	buttons := container.NewGridWithColumns(3, open, recent, create)
 	home := container.NewVBox(intro, buttons)
 
 	wizard = dialogs.NewWizard("Create Project", home)
@@ -315,6 +381,27 @@ func (g *gui) makeCreateDetail(wizard *dialogs.Wizard) fyne.CanvasObject {
 	}
 
 	return form
+}
+
+func (g *gui) makeRecents(wizard *dialogs.Wizard) fyne.CanvasObject {
+	items := listRecents(fyne.CurrentApp().Preferences())
+	return widget.NewList(
+		func() int {
+			return len(items)
+		},
+		func() fyne.CanvasObject {
+			return widget.NewButton("Recent Project", nil)
+		},
+		func(i widget.ListItemID, o fyne.CanvasObject) {
+			b := o.(*widget.Button)
+
+			b.OnTapped = func() {
+				wizard.Hide()
+				g.openProject(items[i].dir)
+			}
+			b.SetText(items[i].name)
+		},
+	)
 }
 
 func filterName(name string) string {

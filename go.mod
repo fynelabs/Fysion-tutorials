@@ -4,6 +4,8 @@ go 1.17
 
 require fyne.io/fyne/v2 v2.4.1
 
+require github.com/BurntSushi/toml v1.3.2
+
 require (
 	fyne.io/systray v1.10.1-0.20230722100817-88df1e0ffa9a // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect

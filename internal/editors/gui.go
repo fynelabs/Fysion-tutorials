@@ -41,10 +41,11 @@ func makeGUI(u fyne.URI) (Editor, error) {
 	content := container.NewStack(canvas.NewRectangle(color.Gray{Y: 0xee}),
 		container.NewPadded(preview))
 
-	return &simpleEditor{content: content, palette: makePalette(inner)}, nil
+	tabs := []*container.TabItem{container.NewTabItem("Theme", makeThemePalette(inner))}
+	return &simpleEditor{content: content, palettes: tabs}, nil
 }
 
-func makePalette(obj fyne.CanvasObject) fyne.CanvasObject {
+func makeThemePalette(obj fyne.CanvasObject) fyne.CanvasObject {
 	th := newEditableTheme()
 	form := container.New(layout.NewFormLayout())
 

@@ -18,12 +18,14 @@ func main() {
 	w.SetPadded(false)
 	w.Resize(fyne.NewSize(1024, 768))
 
-	ui := &gui{win: w, title: binding.NewString()}
+	ui := &gui{win: w, project: newProjectBinding()}
 	w.SetContent(ui.makeGUI())
-	w.SetMainMenu(ui.makeMenu())
-	ui.title.AddListener(binding.NewDataListener(func() {
-		name, _ := ui.title.Get()
-		w.SetTitle("Fysion App: " + name)
+	w.SetMainMenu(ui.makeMenu(a.Preferences()))
+	ui.project.AddListener(binding.NewDataListener(func() {
+		p := ui.project.GetProject()
+		if p != nil {
+			w.SetTitle("Fysion App: " + p.Meta.Details.Name)
+		}
 	}))
 
 	flag.Usage = func() {

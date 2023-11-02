@@ -9,6 +9,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/storage"
+	"fysion.app/fysion/internal/app"
 )
 
 func createFile(name string, dir fyne.URI, content string, data ...interface{}) error {
@@ -44,6 +45,14 @@ go 1.17
 
 require fyne.io/fyne/v2 v2.4.1
 `, sanitise(name))
+	if err != nil {
+		return nil, err
+	}
+
+	err = createFile("FyneApp.toml", dir, `[Details]
+
+Name = "%s"
+`, name)
 	if err != nil {
 		return nil, err
 	}
@@ -98,9 +107,9 @@ require fyne.io/fyne/v2 v2.4.1
 }
 
 func (g *gui) openProject(dir fyne.ListableURI) {
-	name := dir.Name()
-
-	g.title.Set(name)
+	project := app.NewProject(dir)
+	g.project.Set(project)
+	addRecent(project, fyne.CurrentApp().Preferences())
 
 	// empty the data binding if we had a project loaded
 	g.fileTree.Set(map[string][]string{}, map[string]fyne.URI{})
@@ -136,4 +145,25 @@ func addFilesToTree(dir fyne.ListableURI, tree binding.URITree, root string) {
 
 func sanitise(in string) string {
 	return strings.ReplaceAll(in, " ", "_")
+}
+
+type projectBinding struct {
+	binding.Untyped
+}
+
+func newProjectBinding() *projectBinding {
+	return &projectBinding{Untyped: binding.NewUntyped()}
+}
+
+func (p *projectBinding) GetProject() *app.Project {
+	proj, err := p.Get()
+	if proj == nil || err != nil {
+		return nil
+	}
+
+	return proj.(*app.Project)
+}
+
+func (p *projectBinding) SetProject(proj *app.Project) {
+	p.Set(proj)
 }

@@ -25,7 +25,7 @@ var mimes = map[string]func(fyne.URI) (Editor, error){
 
 type Editor interface {
 	Content() fyne.CanvasObject
-	Palette() fyne.CanvasObject
+	Palettes() []*container.TabItem
 
 	Edited() binding.Bool
 	Save() error
@@ -93,8 +93,9 @@ func makeMarkdown(u fyne.URI) (Editor, error) {
 }
 
 type simpleEditor struct {
-	content, palette fyne.CanvasObject
-	edited           binding.Bool
+	content  fyne.CanvasObject
+	edited   binding.Bool
+	palettes []*container.TabItem
 
 	save func() error
 }
@@ -103,8 +104,8 @@ func (s *simpleEditor) Content() fyne.CanvasObject {
 	return s.content
 }
 
-func (s *simpleEditor) Palette() fyne.CanvasObject {
-	return s.palette
+func (s *simpleEditor) Palettes() []*container.TabItem {
+	return s.palettes
 }
 
 func (s *simpleEditor) Edited() binding.Bool {
