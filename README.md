@@ -8,10 +8,14 @@ https://www.youtube.com/watch?v=tYHD7OU9xfM&list=PLw-dEUf31ZOrcauGkrLWSSrJTAfMo_
 You can try out the code in this repo by simply calling `go run .`.
 You will need to have the development tools required for Fyne - check https://developer.fyne.io/started/.
 
+![](assets/screenshot.png)
+
 ## Episodes
 
 To check out the code from an old episode just `git checkout <tag>` where the tag is one of:
 
+* **ep9**: Project Metadata and Recents Storage
+* **ep8**: Editor State and File Save
 * **ep7**: Theme Editor and Preview
 * **ep6**: GUI Files and Unit Tests
 * **ep5**: Opening Multiple Files
