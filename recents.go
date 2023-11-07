@@ -14,9 +14,28 @@ type recent struct {
 }
 
 func addRecent(proj *app.Project, p fyne.Preferences) {
+	items := listRecents(p)
+	for i, item := range items {
+		// don't add a duplicate
+		if item.dir.String() == proj.Dir.String() {
+			if i == 0 || len(items) == 1 {
+				return // nothing to re-order
+			}
+
+			ordered := append([]*recent{item}, items[:i]...)
+			if i < len(items)-1 {
+				ordered = append(ordered, items[i+1:]...)
+			}
+
+			writeRecents(ordered, p)
+			return
+		}
+
+	}
+
 	adding := &recent{name: proj.Meta.Details.Name, dir: proj.Dir}
 
-	all := append([]*recent{adding}, listRecents(p)...)
+	all := append([]*recent{adding}, items...)
 	writeRecents(all, p)
 }
 
