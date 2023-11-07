@@ -22,12 +22,38 @@ func makeGUI(u fyne.URI) (Editor, error) {
 		return nil, err
 	}
 
+	defer r.Close()
 	obj, _, err := gui.DecodeJSON(r)
 	if err != nil {
 		return nil, err
 	}
+
+	save := func() error {
+		w, err := storage.Writer(u)
+		if err != nil {
+			return err
+		}
+
+		defer w.Close()
+		return gui.EncodeJSON(obj, make(map[fyne.CanvasObject]map[string]string), w)
+	}
+
+	widgetType := widget.NewLabel("(select widget)")
+	widgetInfo := widget.NewForm(
+		widget.NewFormItem("Type", widgetType),
+	)
+
 	bg := canvas.NewRectangle(theme.BackgroundColor())
-	inner := container.NewStack(bg, container.NewPadded(obj))
+	tapper := newWidgetSelector(obj, func(obj fyne.CanvasObject) {
+		widgetType.SetText(gui.NameOf(obj))
+
+		items := gui.EditorFor(obj, make(map[string]string))
+		widgetInfo.Items = widgetInfo.Items[:1]
+		widgetInfo.Refresh()
+		widgetInfo.Items = append(widgetInfo.Items, items...)
+		widgetInfo.Refresh()
+	})
+	inner := container.NewStack(bg, container.NewPadded(obj, tapper))
 
 	// TODO get project title, from project type when we add it
 	name := "Preview" // g.title.Get()
@@ -37,12 +63,14 @@ func makeGUI(u fyne.URI) (Editor, error) {
 	picker := widget.NewSelect([]string{"Desktop", "iPhone 15 Max"}, func(string) {})
 	picker.Selected = "Desktop"
 
-	preview := container.NewBorder(container.NewHBox(picker), nil, nil, nil, container.NewCenter(window))
+	multi := container.NewMultipleWindows(window)
+	preview := container.NewBorder(container.NewHBox(picker), nil, nil, nil, multi)
 	content := container.NewStack(canvas.NewRectangle(color.Gray{Y: 0xee}),
 		container.NewPadded(preview))
 
-	tabs := []*container.TabItem{container.NewTabItem("Theme", makeThemePalette(inner))}
-	return &simpleEditor{content: content, palettes: tabs}, nil
+	tabs := []*container.TabItem{container.NewTabItem("Theme", makeThemePalette(inner)),
+		container.NewTabItem("Widget", widgetInfo)}
+	return &simpleEditor{content: content, palettes: tabs, save: save}, nil
 }
 
 func makeThemePalette(obj fyne.CanvasObject) fyne.CanvasObject {
