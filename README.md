@@ -14,6 +14,9 @@ You will need to have the development tools required for Fyne - check https://de
 
 To check out the code from an old episode just `git checkout <tag>` where the tag is one of:
 
+### Series 1:
+
+* **ep10**: Editing Widgets and Layouts
 * **ep9**: Project Metadata and Recents Storage
 * **ep8**: Editor State and File Save
 * **ep7**: Theme Editor and Preview
