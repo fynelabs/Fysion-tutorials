@@ -58,44 +58,42 @@ Name = "%s"
 	}
 
 	err = createFile("main.gui.json", dir, `{
-  "Object": {
-    "Type": "*fyne.Container",
-    "Layout": "VBox",
-    "Name": "",
-    "Objects": [
-      {
-        "Type": "*widget.Label",
-        "Name": "",
-        "Struct": {
-          "Hidden": false,
-          "Text": "Welcome %s!",
-          "Alignment": 0,
-          "Wrapping": 0,
-          "TextStyle": {
-            "Bold": false,
-            "Italic": false,
-            "Monospace": false,
-            "Symbol": false,
-            "TabWidth": 0
-          },
-          "Truncation": 0,
-          "Importance": 0
-        }
-      },
-      {
-        "Type": "*widget.Button",
-        "Name": "",
-        "Struct": {
-          "Hidden": false,
-          "Text": "A button",
-          "Icon": null,
-          "Importance": 0,
-          "Alignment": 0,
-          "IconPlacement": 0
-        }
+  "Type": "*fyne.Container",
+  "Layout": "VBox",
+  "Name": "",
+  "Objects": [
+    {
+      "Type": "*widget.Label",
+      "Name": "",
+      "Struct": {
+        "Hidden": false,
+        "Text": "Welcome %s!",
+        "Alignment": 0,
+        "Wrapping": 0,
+        "TextStyle": {
+          "Bold": false,
+          "Italic": false,
+          "Monospace": false,
+          "Symbol": false,
+          "TabWidth": 0
+        },
+        "Truncation": 0,
+        "Importance": 0
       }
-    ]
-  }
+    },
+    {
+      "Type": "*widget.Button",
+      "Name": "",
+      "Struct": {
+        "Hidden": false,
+        "Text": "A button",
+        "Icon": null,
+        "Importance": 0,
+        "Alignment": 0,
+        "IconPlacement": 0
+      }
+    }
+  ]
 }
 `, strings.ReplaceAll(name, "\"", "\\\""))
 	if err != nil {

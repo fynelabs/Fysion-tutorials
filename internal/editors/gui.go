@@ -44,6 +44,8 @@ func makeGUI(u fyne.URI) (Editor, error) {
 	)
 
 	bg := canvas.NewRectangle(theme.BackgroundColor())
+	th := newEditableTheme()
+	themer := container.NewThemeOverride(obj, th)
 	tapper := newWidgetSelector(obj, func(obj fyne.CanvasObject) {
 		widgetType.SetText(gui.NameOf(obj))
 
@@ -68,13 +70,12 @@ func makeGUI(u fyne.URI) (Editor, error) {
 	content := container.NewStack(canvas.NewRectangle(color.Gray{Y: 0xee}),
 		container.NewPadded(preview))
 
-	tabs := []*container.TabItem{container.NewTabItem("Theme", makeThemePalette(inner)),
+	tabs := []*container.TabItem{container.NewTabItem("Theme", makeThemePalette(themer, th, bg)),
 		container.NewTabItem("Widget", widgetInfo)}
 	return &simpleEditor{content: content, palettes: tabs, save: save}, nil
 }
 
-func makeThemePalette(obj fyne.CanvasObject) fyne.CanvasObject {
-	th := newEditableTheme()
+func makeThemePalette(obj *container.ThemeOverride, th *editableTheme, bg *canvas.Rectangle) fyne.CanvasObject {
 	form := container.New(layout.NewFormLayout())
 
 	// use this to ask our inputs to update on theme change
@@ -83,7 +84,7 @@ func makeThemePalette(obj fyne.CanvasObject) fyne.CanvasObject {
 	}
 
 	updatePreview := func() {
-		setPreviewTheme(obj, th)
+		setPreviewTheme(obj, th, bg)
 	}
 	updateInputs := func() {
 		for _, i := range form.Objects {
@@ -96,7 +97,7 @@ func makeThemePalette(obj fyne.CanvasObject) fyne.CanvasObject {
 	var light, dark *widget.Button
 	light = widget.NewButton("Light", func() {
 		th.variant = theme.VariantLight
-		setPreviewTheme(obj, th)
+		setPreviewTheme(obj, th, bg)
 		updateInputs()
 
 		light.Importance = widget.HighImportance
@@ -107,7 +108,7 @@ func makeThemePalette(obj fyne.CanvasObject) fyne.CanvasObject {
 	light.Importance = widget.HighImportance
 	dark = widget.NewButton("Dark", func() {
 		th.variant = theme.VariantDark
-		setPreviewTheme(obj, th)
+		setPreviewTheme(obj, th, bg)
 		updateInputs()
 
 		light.Importance = widget.MediumImportance
