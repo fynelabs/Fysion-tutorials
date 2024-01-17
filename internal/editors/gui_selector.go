@@ -67,6 +67,24 @@ func (w *widgetSelector) updateOverlay() {
 	w.overlay.Resize(size)
 }
 
+func containerOf(obj fyne.CanvasObject, root *fyne.Container) *fyne.Container {
+	for _, w := range root.Objects {
+		if w == obj {
+			return root
+		}
+
+		switch c := w.(type) {
+		case *fyne.Container:
+			parent := containerOf(obj, c)
+			if parent != nil {
+				return parent
+			}
+		}
+	}
+
+	return nil
+}
+
 func findChild(obj fyne.CanvasObject, pos fyne.Position) fyne.CanvasObject {
 	switch c := obj.(type) {
 	case *fyne.Container:

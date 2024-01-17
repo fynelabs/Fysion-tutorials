@@ -1,8 +1,10 @@
 package editors
 
 import (
+	"errors"
 	"fmt"
 	"image/color"
+	"strings"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -38,15 +40,62 @@ func makeGUI(u fyne.URI) (Editor, error) {
 		return gui.EncodeJSON(obj, make(map[fyne.CanvasObject]map[string]string), w)
 	}
 
+	var tapper *widgetSelector
+	th := newEditableTheme()
+	themer := container.NewThemeOverride(obj, th)
+
+	widgetNames := gui.WidgetClassList()
+	toAdd := ""
+	nameList := widget.NewList(
+		func() int {
+			return len(widgetNames)
+		},
+		func() fyne.CanvasObject {
+			return widget.NewLabel("WidgetClass")
+		},
+		func(id widget.ListItemID, obj fyne.CanvasObject) {
+			class := widgetNames[id]
+			name := strings.Split(class, ".")[1]
+			obj.(*widget.Label).SetText(name)
+		})
+	nameList.OnSelected = func(id widget.ListItemID) {
+		toAdd = widgetNames[id]
+	}
+	insert := widget.NewButton("Insert", func() {
+		if toAdd == "" {
+			return
+		}
+		if _, ok := tapper.chosen.(*fyne.Container); !ok {
+			dialog.ShowError(errors.New("selected widget must be a container"), fyne.CurrentApp().Driver().AllWindows()[0])
+			return
+		}
+
+		created := gui.CreateNew(toAdd)
+		tapper.chosen.(*fyne.Container).Add(created)
+		themer.Refresh()
+	})
+	remove := widget.NewButtonWithIcon("", theme.DeleteIcon(), func() {
+		if tapper.chosen == nil {
+			return
+		}
+
+		root := obj.(*fyne.Container)
+		c := containerOf(tapper.chosen, root)
+		if c == nil {
+			c = root
+		}
+		c.Remove(tapper.chosen)
+		tapper.chosen = nil
+	})
+	remove.Importance = widget.DangerImportance
+
 	widgetType := widget.NewLabel("(select widget)")
 	widgetInfo := widget.NewForm(
 		widget.NewFormItem("Type", widgetType),
 	)
 
 	bg := canvas.NewRectangle(theme.BackgroundColor())
-	th := newEditableTheme()
-	themer := container.NewThemeOverride(obj, th)
-	tapper := newWidgetSelector(obj, func(obj fyne.CanvasObject) {
+	tapper = newWidgetSelector(obj, func(obj fyne.CanvasObject) {
 		widgetType.SetText(gui.NameOf(obj))
 
 		items := gui.EditorFor(obj, make(map[string]string))
@@ -70,8 +119,12 @@ func makeGUI(u fyne.URI) (Editor, error) {
 	content := container.NewStack(canvas.NewRectangle(color.Gray{Y: 0xee}),
 		container.NewPadded(preview))
 
+	buttonRow := container.NewBorder(nil, nil, nil, remove, insert)
+	addRemove := container.NewBorder(nil, buttonRow, nil, nil, nameList)
+	widgetPanel := container.NewVSplit(widgetInfo, addRemove)
+	widgetPanel.Offset = 0.7
 	tabs := []*container.TabItem{container.NewTabItem("Theme", makeThemePalette(themer, th, bg)),
-		container.NewTabItem("Widget", widgetInfo)}
+		container.NewTabItem("Widget", widgetPanel)}
 	return &simpleEditor{content: content, palettes: tabs, save: save}, nil
 }
 
