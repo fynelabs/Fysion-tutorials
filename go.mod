@@ -2,7 +2,7 @@ module fysion.app/fysion
 
 go 1.17
 
-require fyne.io/fyne/v2 v2.4.1
+require fyne.io/fyne/v2 v2.4.4-0.20240201215649-34502cd69547
 
 require github.com/BurntSushi/toml v1.3.2
 
