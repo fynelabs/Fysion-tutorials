@@ -104,11 +104,12 @@ func makeGUI(u fyne.URI) (Editor, error) {
 		widgetInfo.Items = append(widgetInfo.Items, items...)
 		widgetInfo.Refresh()
 	})
-	inner := container.NewStack(bg, container.NewPadded(obj, tapper))
+	inner := container.NewStack(bg, container.NewPadded(themer, tapper))
 
 	// TODO get project title, from project type when we add it
 	name := "Preview" // g.title.Get()
 	window := container.NewInnerWindow(name, inner)
+	window.SetPadded(false)
 	window.CloseIntercept = func() {}
 
 	picker := widget.NewSelect([]string{"Desktop", "iPhone 15 Max"}, func(string) {})
