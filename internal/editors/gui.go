@@ -110,15 +110,15 @@ func makeGUI(u fyne.URI) (Editor, error) {
 	name := "Preview" // g.title.Get()
 	window := container.NewInnerWindow(name, inner)
 	window.SetPadded(false)
+	window.Move(fyne.NewPos(20, 56))
 	window.CloseIntercept = func() {}
 
 	picker := widget.NewSelect([]string{"Desktop", "iPhone 15 Max"}, func(string) {})
 	picker.Selected = "Desktop"
 
 	multi := container.NewMultipleWindows(window)
-	preview := container.NewBorder(container.NewHBox(picker), nil, nil, nil, multi)
-	content := container.NewStack(canvas.NewRectangle(color.Gray{Y: 0xee}),
-		container.NewPadded(preview))
+	content := container.NewStack(canvas.NewRectangle(color.Gray{Y: 0xee}), container.NewPadded(
+		container.NewStack(multi, container.NewVBox(container.NewHBox(picker)))))
 
 	buttonRow := container.NewBorder(nil, nil, nil, remove, insert)
 	addRemove := container.NewBorder(nil, buttonRow, nil, nil, nameList)
