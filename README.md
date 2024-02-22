@@ -6,13 +6,18 @@ https://www.youtube.com/watch?v=tYHD7OU9xfM&list=PLw-dEUf31ZOrcauGkrLWSSrJTAfMo_
 ## Trying out the code
 
 You can try out the code in this repo by simply calling `go run .`.
-You will need to have the development tools required for Fyne - check https://developer.fyne.io/started/.
+You will need to have the development tools required for Fyne - check https://docs.fyne.io/started/.
 
 ![](assets/screenshot.png)
 
 ## Episodes
 
 To check out the code from an old episode just `git checkout <tag>` where the tag is one of:
+
+### Series 2:
+
+* **s2e2**: Mobile preview
+* **s2e1**: Add and delete widgets
 
 ### Series 1:
 
