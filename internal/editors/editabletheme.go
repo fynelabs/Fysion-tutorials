@@ -9,7 +9,8 @@ import (
 
 type editableTheme struct {
 	fyne.Theme
-	variant fyne.ThemeVariant
+	variant  fyne.ThemeVariant
+	multiple float32
 
 	dark  map[fyne.ThemeColorName]color.Color
 	light map[fyne.ThemeColorName]color.Color
@@ -17,10 +18,11 @@ type editableTheme struct {
 
 func newEditableTheme() *editableTheme {
 	return &editableTheme{
-		Theme:   theme.DefaultTheme(),
-		variant: theme.VariantLight,
-		dark:    make(map[fyne.ThemeColorName]color.Color),
-		light:   make(map[fyne.ThemeColorName]color.Color),
+		Theme:    theme.DefaultTheme(),
+		variant:  theme.VariantLight,
+		dark:     make(map[fyne.ThemeColorName]color.Color),
+		light:    make(map[fyne.ThemeColorName]color.Color),
+		multiple: 1,
 	}
 }
 
@@ -35,6 +37,10 @@ func (e *editableTheme) Color(n fyne.ThemeColorName, _ fyne.ThemeVariant) color.
 		}
 	}
 	return e.Theme.Color(n, e.variant)
+}
+
+func (e *editableTheme) Size(n fyne.ThemeSizeName) float32 {
+	return e.Theme.Size(n) * e.multiple
 }
 
 func (e *editableTheme) setColor(n fyne.ThemeColorName, v fyne.ThemeVariant, c color.Color) {

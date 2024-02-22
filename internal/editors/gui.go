@@ -94,7 +94,7 @@ func makeGUI(u fyne.URI) (Editor, error) {
 		widget.NewFormItem("Type", widgetType),
 	)
 
-	bg := canvas.NewRectangle(theme.BackgroundColor())
+	desktopBG := canvas.NewRectangle(theme.BackgroundColor())
 	tapper = newWidgetSelector(obj, func(obj fyne.CanvasObject) {
 		widgetType.SetText(gui.NameOf(obj))
 
@@ -104,32 +104,63 @@ func makeGUI(u fyne.URI) (Editor, error) {
 		widgetInfo.Items = append(widgetInfo.Items, items...)
 		widgetInfo.Refresh()
 	})
-	inner := container.NewStack(bg, container.NewPadded(themer, tapper))
+
+	preview := container.NewPadded(themer, tapper)
+	desktopHolder := container.NewStack(preview)
 
 	// TODO get project title, from project type when we add it
 	name := "Preview" // g.title.Get()
-	window := container.NewInnerWindow(name, inner)
+	window := container.NewInnerWindow(name, container.NewStack(desktopBG, preview))
 	window.SetPadded(false)
 	window.Move(fyne.NewPos(20, 56))
 	window.CloseIntercept = func() {}
 
-	picker := widget.NewSelect([]string{"Desktop", "iPhone 15 Max"}, func(string) {})
-	picker.Selected = "Desktop"
+	mobileBG := canvas.NewRectangle(theme.BackgroundColor())
+	mobileHolder := container.NewStack()
 
-	multi := container.NewMultipleWindows(window)
+	desktop := container.NewMultipleWindows(window)
+	mobile := container.NewCenter(newMobilePreview(mobileHolder, mobileBG))
+
+	picker := widget.NewSelect([]string{"Desktop", "Smart Phone"}, func(mode string) {
+		switch mode {
+		case "Desktop":
+			desktopHolder.Objects = []fyne.CanvasObject{preview}
+			mobileHolder.Objects = []fyne.CanvasObject{}
+			desktopHolder.Refresh()
+			mobileHolder.Refresh()
+
+			th.multiple = 1
+			themer.Refresh()
+			mobile.Hide()
+			desktop.Show()
+		default:
+			desktopHolder.Objects = []fyne.CanvasObject{}
+			mobileHolder.Objects = []fyne.CanvasObject{preview}
+			desktopHolder.Refresh()
+			mobileHolder.Refresh()
+
+			th.multiple = 0.6
+			themer.Refresh()
+			mobile.Show()
+			desktop.Hide()
+		}
+	})
+	picker.Selected = "Desktop"
+	mobile.Hide()
+
 	content := container.NewStack(canvas.NewRectangle(color.Gray{Y: 0xee}), container.NewPadded(
-		container.NewStack(multi, container.NewVBox(container.NewHBox(picker)))))
+		container.NewStack(desktop, mobile, container.NewVBox(container.NewHBox(picker)))))
 
 	buttonRow := container.NewBorder(nil, nil, nil, remove, insert)
 	addRemove := container.NewBorder(nil, buttonRow, nil, nil, nameList)
 	widgetPanel := container.NewVSplit(widgetInfo, addRemove)
 	widgetPanel.Offset = 0.7
-	tabs := []*container.TabItem{container.NewTabItem("Theme", makeThemePalette(themer, th, bg)),
+	tabs := []*container.TabItem{container.NewTabItem("Theme", makeThemePalette(themer, th, desktopBG, mobileBG)),
 		container.NewTabItem("Widget", widgetPanel)}
 	return &simpleEditor{content: content, palettes: tabs, save: save}, nil
 }
 
-func makeThemePalette(obj *container.ThemeOverride, th *editableTheme, bg *canvas.Rectangle) fyne.CanvasObject {
+func makeThemePalette(obj *container.ThemeOverride, th *editableTheme, bg1, bg2 *canvas.Rectangle) fyne.CanvasObject {
 	form := container.New(layout.NewFormLayout())
 
 	// use this to ask our inputs to update on theme change
@@ -138,7 +169,7 @@ func makeThemePalette(obj *container.ThemeOverride, th *editableTheme, bg *canva
 	}
 
 	updatePreview := func() {
-		setPreviewTheme(obj, th, bg)
+		setPreviewTheme(obj, th, bg1, bg2)
 	}
 	updateInputs := func() {
 		for _, i := range form.Objects {
@@ -151,7 +182,7 @@ func makeThemePalette(obj *container.ThemeOverride, th *editableTheme, bg *canva
 	var light, dark *widget.Button
 	light = widget.NewButton("Light", func() {
 		th.variant = theme.VariantLight
-		setPreviewTheme(obj, th, bg)
+		setPreviewTheme(obj, th, bg1, bg2)
 		updateInputs()
 
 		light.Importance = widget.HighImportance
@@ -162,7 +193,7 @@ func makeThemePalette(obj *container.ThemeOverride, th *editableTheme, bg *canva
 	light.Importance = widget.HighImportance
 	dark = widget.NewButton("Dark", func() {
 		th.variant = theme.VariantDark
-		setPreviewTheme(obj, th, bg)
+		setPreviewTheme(obj, th, bg1, bg2)
 		updateInputs()
 
 		light.Importance = widget.MediumImportance
