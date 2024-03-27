@@ -16,8 +16,9 @@ To check out the code from an old episode just `git checkout <tag>` where the ta
 
 ### Series 2:
 
-* **s2e2**: Mobile preview
-* **s2e1**: Add and delete widgets
+* **s2e3**: Widget Tree and About Panel
+* **s2e2**: Mobile Preview
+* **s2e1**: Add and Delete Widgets
 
 ### Series 1:
 
@@ -30,7 +31,7 @@ To check out the code from an old episode just `git checkout <tag>` where the ta
 * **ep4**: File Tree and Editor Layout
 * **ep3**: Project Creation Wizard
 * **ep2**: Packaging and Folder Open
-* **ep1**: Setup, layout and theme
+* **ep1**: Setup, Layout and Theme
 
 ## License
 
