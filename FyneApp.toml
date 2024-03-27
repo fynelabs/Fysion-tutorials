@@ -2,4 +2,5 @@
   Icon = "assets/Icon.png"
   Name = "Fysion App"
   ID = "app.fysion"
+  Version = "0.0.1"
   Build = 8

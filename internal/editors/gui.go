@@ -18,6 +18,21 @@ import (
 	"github.com/fyne-io/defyne/pkg/gui"
 )
 
+type GUIEditor struct {
+	simpleEditor
+
+	root   fyne.CanvasObject
+	tapper *widgetSelector
+}
+
+func (g *GUIEditor) RootObject() fyne.CanvasObject {
+	return g.root
+}
+
+func (g *GUIEditor) SelectWidget(obj fyne.CanvasObject) {
+	g.tapper.choose(obj)
+}
+
 func makeGUI(u fyne.URI) (Editor, error) {
 	r, err := storage.Reader(u)
 	if err != nil {
@@ -157,7 +172,11 @@ func makeGUI(u fyne.URI) (Editor, error) {
 	widgetPanel.Offset = 0.7
 	tabs := []*container.TabItem{container.NewTabItem("Theme", makeThemePalette(themer, th, desktopBG, mobileBG)),
 		container.NewTabItem("Widget", widgetPanel)}
-	return &simpleEditor{content: content, palettes: tabs, save: save}, nil
+	gui := &GUIEditor{root: obj, tapper: tapper}
+	gui.content = content
+	gui.palettes = tabs
+	gui.save = save
+	return gui, nil
 }
 
 func makeThemePalette(obj *container.ThemeOverride, th *editableTheme, bg1, bg2 *canvas.Rectangle) fyne.CanvasObject {

@@ -38,18 +38,22 @@ func (w *widgetSelector) Resize(s fyne.Size) {
 }
 
 func (w *widgetSelector) Tapped(ev *fyne.PointEvent) {
-	w.overlay.StrokeColor = theme.PrimaryColor()
-	w.overlay.Refresh()
-
 	found := findChild(w.root, ev.Position)
 	if found == nil {
 		found = w.root
 	}
 
-	w.chosen = found
+	w.choose(found)
+}
+
+func (w *widgetSelector) choose(o fyne.CanvasObject) {
+	w.overlay.StrokeColor = theme.PrimaryColor()
+	w.overlay.Refresh()
+
+	w.chosen = o
 	w.updateOverlay()
 
-	w.cb(found)
+	w.cb(o)
 }
 
 func (w *widgetSelector) updateOverlay() {

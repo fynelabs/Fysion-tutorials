@@ -4,7 +4,10 @@ go 1.17
 
 require fyne.io/fyne/v2 v2.4.4-rc2.0.20240220215900-3c111a2ff7e9
 
-require github.com/BurntSushi/toml v1.3.2
+require (
+	fyne.io/x/fyne v0.0.0-20240326131024-3ba9170cc3be
+	github.com/BurntSushi/toml v1.3.2
+)
 
 require (
 	github.com/jeandeaual/go-locale v0.0.0-20240204043739-672d8d016d9a // indirect
@@ -22,7 +25,7 @@ require (
 	github.com/fyne-io/glfw-js v0.0.0-20240101223322-6e1efdc71b7a // indirect
 	github.com/fyne-io/image v0.0.0-20220602074514-4956b0afb3d2 // indirect
 	github.com/go-gl/gl v0.0.0-20211210172815-726fda9656d6 // indirect
-	github.com/go-gl/glfw/v3.3/glfw v0.0.0-20231223183121-56fa3ac82ce7 // indirect
+	github.com/go-gl/glfw/v3.3/glfw v0.0.0-20240306074159-ea2d69986ecb // indirect
 	github.com/go-text/render v0.0.0-20230619120952-35bccb6164b8 // indirect
 	github.com/go-text/typesetting v0.1.0 // indirect
 	github.com/godbus/dbus/v5 v5.1.0 // indirect

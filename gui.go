@@ -2,6 +2,8 @@ package main
 
 import (
 	"errors"
+	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -19,16 +21,21 @@ import (
 	"fysion.app/fysion/internal/app"
 	"fysion.app/fysion/internal/dialogs"
 	"fysion.app/fysion/internal/editors"
+
+	xDialog "fyne.io/x/fyne/dialog"
+	gui2 "github.com/fyne-io/defyne/pkg/gui"
 )
 
 type gui struct {
 	win     fyne.Window
 	project *projectBinding
 
-	fileTree binding.URITree
-	content  *container.DocTabs
-	openTabs map[fyne.URI]*tabItem
-	palette  *container.AppTabs
+	fileTree   binding.URITree
+	screenTree binding.StringTree
+	content    *container.DocTabs
+	openTabs   map[string]*tabItem
+	palette    *container.AppTabs
+	explorer   *widget.Accordion
 }
 
 type tabItem struct {
@@ -64,6 +71,7 @@ func (g *gui) makeBanner() fyne.CanvasObject {
 func (g *gui) makeGUI() fyne.CanvasObject {
 	top := g.makeBanner()
 	g.fileTree = binding.NewURITree()
+	g.screenTree = binding.NewStringTree()
 	files := widget.NewTreeWithData(g.fileTree, func(branch bool) fyne.CanvasObject {
 		return widget.NewLabel("filename.jpg")
 	}, func(data binding.DataItem, branch bool, obj fyne.CanvasObject) {
@@ -86,19 +94,66 @@ func (g *gui) makeGUI() fyne.CanvasObject {
 			return
 		}
 
-		err = g.openFile(u)
+		_, err = g.openFile(u)
 		if err != nil {
 			dialog.ShowError(err, g.win)
 			files.Unselect(id)
 		}
 	}
 
+	screens := widget.NewTree(
+		func(id widget.TreeNodeID) []widget.TreeNodeID {
+			return g.screenTree.ChildIDs(id)
+		},
+		func(id widget.TreeNodeID) bool {
+			return len(g.screenTree.ChildIDs((id))) > 0
+		},
+		func(_ bool) fyne.CanvasObject {
+			return widget.NewLabel("Screen Item")
+		},
+		func(id widget.TreeNodeID, _ bool, obj fyne.CanvasObject) {
+			l := obj.(*widget.Label)
+			data, _ := g.screenTree.GetValue(id)
+			l.SetText(data)
+		})
+	screens.OnSelected = func(id widget.TreeNodeID) {
+		if strings.Contains(id, "#") {
+			splits := strings.Split(id, "#")
+			u, _ := storage.ParseURI(splits[0])
+			edit, err := g.openFile(u)
+			if err != nil {
+				dialog.ShowError(err, g.win)
+				files.Unselect(id)
+				return
+			}
+
+			pos := strings.LastIndex(splits[1], ":")
+			ui, ok := edit.(*editors.GUIEditor)
+			if pos == -1 || !ok {
+				return
+			}
+			id := splits[1][pos+1:]
+			obj := findObject(ui.RootObject(), id)
+			if obj != nil {
+				ui.SelectWidget(obj)
+			}
+		} else {
+			u, _ := storage.ParseURI(id)
+			_, err := g.openFile(u)
+			if err != nil {
+				dialog.ShowError(err, g.win)
+				screens.Unselect(id)
+			}
+		}
+	}
+	g.screenTree.AddListener(binding.NewDataListener(screens.Refresh))
 	left := widget.NewAccordion(
+		widget.NewAccordionItem("Screens", screens),
 		widget.NewAccordionItem("Files", files),
-		widget.NewAccordionItem("Screens", widget.NewLabel("TODO screens")),
 	)
 	left.Open(0)
 	left.MultiOpen = true
+	g.explorer = left
 
 	g.palette = container.NewAppTabs(
 		container.NewTabItem("App", g.makeAppPalette()),
@@ -116,12 +171,12 @@ Please open a file from the tree on the left`)
 		var u fyne.URI
 		for child, childItem := range g.openTabs {
 			if childItem.tab == item {
-				u = child
+				u, _ = storage.ParseURI(child)
 			}
 		}
 
 		if u != nil {
-			delete(g.openTabs, u)
+			delete(g.openTabs, u.String())
 		}
 		g.content.Remove(item)
 	}
@@ -129,7 +184,7 @@ Please open a file from the tree on the left`)
 		var u fyne.URI
 		for child, childItem := range g.openTabs {
 			if childItem.tab == item {
-				u = child
+				u, _ = storage.ParseURI(child)
 				g.setPalette(childItem.editor)
 			}
 		}
@@ -220,34 +275,46 @@ func (g *gui) makeMenu(p fyne.Preferences) *fyne.MainMenu {
 	}
 	recent.ChildMenu = fyne.NewMenu("Recents", recentItems...)
 
+	about := fyne.NewMenuItem("About", g.showAbout)
 	file := fyne.NewMenu("File",
 		fyne.NewMenuItem("Open Project", g.openProjectDialog),
 		recent,
 		fyne.NewMenuItemSeparator(),
 		save,
+		fyne.NewMenuItemSeparator(),
+		about,
 	)
 
 	return fyne.NewMainMenu(file)
 }
 
-func (g *gui) openFile(u fyne.URI) error {
-	if item, ok := g.openTabs[u]; ok {
+func (g *gui) openFile(u fyne.URI) (editors.Editor, error) {
+	if item, ok := g.openTabs[u.String()]; ok {
 		g.content.Select(item.tab)
-		return nil
+		return item.editor, nil
 	}
 
 	edit, err := editors.ForURI(u)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	g.setPalette(edit)
+
+	if ui, ok := edit.(*editors.GUIEditor); ok {
+		obj := ui.RootObject()
+
+		g.screenTree.Remove(u.String())
+
+		g.screenTree.Append(binding.DataTreeRootID, u.String(), u.Name()[:len(u.Name())-9])
+		addObjectsToTree(obj, g.screenTree, u, u.String()+"#")
+	}
 
 	name := filterName(u.Name())
 	item := container.NewTabItem(name, edit.Content())
 	if g.openTabs == nil {
-		g.openTabs = make(map[fyne.URI]*tabItem)
+		g.openTabs = make(map[string]*tabItem)
 	}
-	g.openTabs[u] = &tabItem{editor: edit, tab: item}
+	g.openTabs[u.String()] = &tabItem{editor: edit, tab: item}
 
 	dirty := edit.Edited()
 	dirty.AddListener(binding.NewDataListener(func() {
@@ -271,7 +338,8 @@ func (g *gui) openFile(u fyne.URI) error {
 				continue
 			}
 
-			parent, _ := storage.Parent(uri)
+			u, _ = storage.ParseURI(uri)
+			parent, _ := storage.Parent(u)
 			tab.Text = parent.Name() + string([]rune{filepath.Separator}) + tab.Text
 		}
 
@@ -284,7 +352,7 @@ func (g *gui) openFile(u fyne.URI) error {
 	g.content.Append(item)
 	g.content.Select(item)
 
-	return nil
+	return edit, nil
 }
 
 func (g *gui) openProjectDialog() {
@@ -411,4 +479,57 @@ func filterName(name string) string {
 	}
 
 	return name
+}
+
+func addObjectsToTree(obj fyne.CanvasObject, tree binding.StringTree, file fyne.URI,
+	root string) {
+	nodeID := fmt.Sprintf(root+":%p", obj)
+	nodeRoot := root
+	if root[len(root)-1] == '#' {
+		nodeRoot = root[:len(root)-1]
+	}
+	tree.Append(nodeRoot, nodeID, gui2.NameOf(obj))
+
+	switch c := obj.(type) {
+	case *fyne.Container:
+		for _, o := range c.Objects {
+			addObjectsToTree(o, tree, file, nodeID)
+		}
+	}
+}
+
+func findObject(obj fyne.CanvasObject, id string) fyne.CanvasObject {
+	myID := fmt.Sprintf("%p", obj)
+	if myID == id {
+		return obj
+	}
+
+	switch c := obj.(type) {
+	case *fyne.Container:
+		for _, o := range c.Objects {
+			ret := findObject(o, id)
+			if ret != nil {
+				return ret
+			}
+		}
+	}
+
+	return nil
+}
+
+func (g *gui) showAbout() {
+	about, _ := url.Parse("https://fysion.app")
+	sponsor, _ := url.Parse("https://fysion.app/sponsor")
+	text := `A low-code UI builder using Fyne
+
+## Sponsors
+
+Your name here!
+`
+
+	xDialog.ShowAboutWindow(text,
+		[]*widget.Hyperlink{
+			widget.NewHyperlink("About", about),
+			widget.NewHyperlink("Sponsor", sponsor)},
+		fyne.CurrentApp())
 }

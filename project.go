@@ -9,6 +9,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/storage"
+	"fyne.io/fyne/v2/widget"
 	"fysion.app/fysion/internal/app"
 )
 
@@ -112,10 +113,17 @@ func (g *gui) openProject(dir fyne.ListableURI) {
 	// empty the data binding if we had a project loaded
 	g.fileTree.Set(map[string][]string{}, map[string]fyne.URI{})
 
-	addFilesToTree(dir, g.fileTree, binding.DataTreeRootID)
+	addFilesToTree(dir, g.fileTree, g.screenTree, binding.DataTreeRootID)
+	screens := g.screenTree.ChildIDs(binding.DataTreeRootID)
+	if len(screens) > 0 {
+		g.explorer.Items[0].Detail.(*widget.Tree).Select(screens[0])
+	} else {
+		g.explorer.CloseAll()
+		g.explorer.Open(1)
+	}
 }
 
-func addFilesToTree(dir fyne.ListableURI, tree binding.URITree, root string) {
+func addFilesToTree(dir fyne.ListableURI, tree binding.URITree, screens binding.StringTree, root string) {
 	items, _ := dir.List()
 	for _, uri := range items {
 		name := uri.Name()
@@ -125,6 +133,10 @@ func addFilesToTree(dir fyne.ListableURI, tree binding.URITree, root string) {
 		pos := strings.LastIndex(name, ".gui.go")
 		if pos != -1 && pos == len(name)-7 {
 			continue
+		}
+		pos = strings.LastIndex(name, ".gui.json")
+		if pos != -1 && pos == len(name)-9 {
+			screens.Append(binding.DataTreeRootID, uri.String(), name[:len(name)-9])
 		}
 
 		nodeID := uri.String()
@@ -136,7 +148,7 @@ func addFilesToTree(dir fyne.ListableURI, tree binding.URITree, root string) {
 		}
 		if isDir {
 			child, _ := storage.ListerForURI(uri)
-			addFilesToTree(child, tree, nodeID)
+			addFilesToTree(child, tree, screens, nodeID)
 		}
 	}
 }
